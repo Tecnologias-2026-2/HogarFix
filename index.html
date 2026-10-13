@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HogarFix | Servicios para tu hogar</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="navbar">
+    <a class="brand" href="#" aria-label="HogarFix inicio">
+      <span class="brand-mark">⌂</span><span>HOGAR<span class="brand-blue">FIX</span><small>Soluciones para tu hogar</small></span>
+    </a>
+    <button class="menu-toggle" aria-label="Abrir menú" onclick="document.querySelector('.nav-links').classList.toggle('open')">☰</button>
+    <nav class="nav-links">
+      <a href="#inicio">Inicio</a><a href="#servicios">Servicios</a><a href="#proveedores">Proveedores</a><a href="#como-funciona">Cómo funciona</a>
+    </nav>
+    <div class="nav-actions"><a class="login" href="#perfil">Iniciar sesión</a><a class="btn btn-small" href="#cta">Regístrate</a></div>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-inner">
+        <span class="eyebrow hero-eyebrow">✦ Bogotá, Colombia</span>
+        <h1>Hola, bienvenido <span class="wave">👋</span></h1>
+        <h2>¿Qué servicio necesitas hoy?</h2>
+        <p>Conectamos con profesionales verificados para plomería, electricidad,<br class="desktop-only"> jardinería y más.</p>
+        <div class="hero-benefits"><span>🟢 Profesionales verificados</span><span>🟢 Pagos seguros</span><span>🟢 Garantía en tus solicitudes</span></div>
+      </div>
+    </section>
+
+    <section class="profile-section" id="perfil">
+      <div class="section-heading">
+        <span class="eyebrow">¿CÓMO QUIERES USAR HOGARFIX?</span>
+        <h2>Elige tu perfil</h2>
+      </div>
+      <div class="profile-cards">
+        <a class="profile-card selected" href="#servicios"><span class="profile-icon">⌂</span><span><strong>Soy Cliente</strong><small>Busca y contrata servicios para tu hogar.</small></span><span class="arrow">→</span></a>
+        <a class="profile-card" href="#proveedores"><span class="profile-icon tool">⚒</span><span><strong>Soy Proveedor</strong><small>Ofrece tus servicios profesionales y crece.</small></span><span class="arrow">→</span></a>
+      </div>
+    </section>
+
+    <section class="services-section" id="servicios">
+      <div class="section-heading">
+        <span class="eyebrow">NUESTROS SERVICIOS</span>
+        <h2>¿Qué necesitas arreglar?</h2>
+        <p>Encuentra especialistas calificados en diferentes áreas del hogar.</p>
+      </div>
+      <div class="service-grid">
+        <article class="service-card"><div class="service-icon plumbing">🛠</div><h3>Plomería</h3><p>Reparación de fugas, grifos y tuberías.</p><span class="service-price">Desde $50.000</span></article>
+        <article class="service-card"><div class="service-icon electricity">⚡</div><h3>Electricidad</h3><p>Instalaciones, cortocircuitos y mantenimiento.</p><span class="service-price">Desde $45.000</span></article>
+        <article class="service-card"><div class="service-icon garden">🌿</div><h3>Jardinería</h3><p>Poda, mantenimiento y cuidado de jardines.</p><span class="service-price">Desde $40.000</span></article>
+        <article class="service-card"><div class="service-icon cleaning">🧹</div><h3>Aseo General</h3><p>Aseo del hogar y limpieza de espacios.</p><span class="service-price">Desde $35.000</span></article>
+      </div>
+    </section>
+
+    <section class="how-section" id="como-funciona">
+      <div class="section-heading light">
+        <span class="eyebrow">SIMPLE Y RÁPIDO</span>
+        <h2>Cómo funciona HogarFix</h2>
+        <p>En cuatro sencillos pasos tienes tu hogar en buenas manos.</p>
+      </div>
+      <div class="steps-grid">
+        <article class="step"><span class="step-icon">⌕</span><h3>Busca un servicio</h3><p>Elige el servicio que necesitas y explora profesionales.</p></article>
+        <article class="step"><span class="step-icon">♙</span><h3>Elige tu proveedor</h3><p>Revisa perfiles, calificaciones y disponibilidad.</p></article>
+        <article class="step"><span class="step-icon">▣</span><h3>Agenda tu cita</h3><p>Coordina fecha, hora y detalles directamente.</p></article>
+        <article class="step"><span class="step-icon">✓</span><h3>Disfruta el resultado</h3><p>Califica el servicio y comparte tu experiencia.</p></article>
+      </div>
+    </section>
+
+    <section class="providers-section" id="proveedores">
+      <div class="section-heading">
+        <span class="eyebrow">PROFESIONALES CERCA DE TI</span>
+        <h2>Proveedores disponibles</h2>
+        <p>Profesionales verificados con alta calificación.</p>
+      </div>
+      <div class="provider-grid">
+        <article class="provider-card"><div class="avatar">👨🏻‍🔧</div><div class="provider-info"><h3>Andrés Ramírez</h3><span class="verified">✓ Verificado</span><p>Plomería · 5 años exp.</p><div class="rating">★★★★★ <b>4.9</b></div><small>Disponible hoy</small></div></article>
+        <article class="provider-card"><div class="avatar">👨🏽‍🔧</div><div class="provider-info"><h3>Juan Torres</h3><span class="verified">✓ Verificado</span><p>Electricidad · 8 años exp.</p><div class="rating">★★★★★ <b>4.8</b></div><small>Disponible hoy</small></div></article>
+        <article class="provider-card"><div class="avatar">👨🏻‍🌾</div><div class="provider-info"><h3>Javier Moreno</h3><span class="verified">✓ Verificado</span><p>Jardinería · 6 años exp.</p><div class="rating">★★★★★ <b>4.9</b></div><small>Disponible mañana</small></div></article>
+        <article class="provider-card"><div class="avatar">👩🏽‍🔧</div><div class="provider-info"><h3>María López</h3><span class="verified">✓ Verificado</span><p>Aseo general · 4 años exp.</p><div class="rating">★★★★★ <b>5.0</b></div><small>Disponible hoy</small></div></article>
+      </div>
+    </section>
+
+    <section class="reviews-section">
+      <div class="section-heading">
+        <span class="eyebrow">OPINIONES REALES</span>
+        <h2>Lo que dicen nuestros clientes</h2>
+      </div>
+      <div class="reviews-layout">
+        <article class="score-card"><strong>4.8</strong><div class="rating">★★★★★</div><p>Basado en 250 opiniones</p><div class="rating-bars"><span>5 ★ <i><b style="width:82%"></b></i> 82%</span><span>4 ★ <i><b style="width:12%"></b></i> 12%</span><span>3 ★ <i><b style="width:4%"></b></i> 4%</span><span>2 ★ <i><b style="width:1%"></b></i> 1%</span><span>1 ★ <i><b style="width:1%"></b></i> 1%</span></div></article>
+        <div class="review-grid">
+          <article class="review-card"><div class="review-top"><span class="mini-avatar">👨🏻</span><div><strong>Sebastián Torres</strong><small>Hace 2 días</small></div><span class="verified">✓ Verificado</span></div><div class="rating">★★★★★</div><p>Excelente servicio, el técnico llegó puntual y solucionó el problema rápidamente. ¡Muy recomendado!</p></article>
+          <article class="review-card"><div class="review-top"><span class="mini-avatar">👩🏻</span><div><strong>María Fernanda Gómez</strong><small>Hace 3 días</small></div><span class="verified">✓ Verificado</span></div><div class="rating">★★★★★</div><p>Excelente trabajo, dejó todo limpio y organizado. El profesional fue muy amable.</p></article>
+          <article class="review-card"><div class="review-top"><span class="mini-avatar">👨🏽</span><div><strong>Carlos González</strong><small>Hace 1 semana</small></div><span class="verified">✓ Verificado</span></div><div class="rating">★★★★★</div><p>Buen trato y muy profesional. Definitivamente volveré a utilizar la plataforma.</p></article>
+          <article class="review-card"><div class="review-top"><span class="mini-avatar">👩🏽</span><div><strong>Laura Rodríguez</strong><small>Hace 2 semanas</small></div><span class="verified">✓ Verificado</span></div><div class="rating">★★★★★</div><p>Muy sencillo encontrar servicios confiables. Me ahorró mucho tiempo y esfuerzo.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section" id="cta">
+      <div class="cta-card"><h2>¿Listo para solucionar tu hogar?</h2><p>Únete a miles de clientes satisfechos. Regístrate gratis y<br class="desktop-only"> agenda tu primer servicio hoy.</p><div><a href="#perfil" class="btn btn-white">Crear cuenta gratis</a><a href="#servicios" class="btn btn-outline">Explorar servicios</a></div></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand"><a class="brand brand-footer" href="#"><span class="brand-mark">⌂</span><span>HOGAR<span class="brand-blue">FIX</span><small>Soluciones para tu hogar</small></span></a><p>Conectamos hogares con profesionales confiables, seguros, rápidos y profesionales.</p></div>
+      <div class="footer-column"><h3>Servicios</h3><a href="#servicios">Plomería</a><a href="#servicios">Electricidad</a><a href="#servicios">Jardinería</a><a href="#servicios">Aseo General</a></div>
+      <div class="footer-column"><h3>Compañía</h3><a href="#inicio">Nosotros</a><a href="#como-funciona">Cómo funciona</a><a href="#proveedores">Trabaja con nosotros</a><a href="#cta">Blog</a></div>
+      <div class="footer-column"><h3>Ayuda</h3><a href="#cta">Centro de ayuda</a><a href="#cta">Preguntas frecuentes</a><a href="#cta">Política de privacidad</a><a href="#cta">Términos y condiciones</a></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 HogarFix. Todos los derechos reservados.</span><span>Español · Colombia</span></div>
+  </footer>
+</body>
+</html>
