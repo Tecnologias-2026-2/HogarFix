@@ -1,5 +1,5 @@
 const menuButton = document.querySelector(".menu-toggle");
-const navigation = document.querySelector("#primary-nav, #client-nav");
+const navigation = document.querySelector("#primary-nav, #client-nav, #provider-nav");
 
 menuButton?.addEventListener("click", () => {
   const isOpen = menuButton.getAttribute("aria-expanded") === "true";
@@ -36,10 +36,12 @@ contrastToggle?.addEventListener("click", () => {
 const registerForm = document.querySelector("#register-form");
 const registerRole = document.querySelector("#register-role");
 const registerMessage = document.querySelector("#register-message");
+const registerLoginLink = document.querySelector("#register-login-link");
 
 if (registerRole) {
   const role = new URLSearchParams(window.location.search).get("tipo");
   registerRole.textContent = role === "proveedor" ? "Proveedor" : "Cliente";
+  if (registerLoginLink) registerLoginLink.href = `login.html?tipo=${role === "proveedor" ? "proveedor" : "cliente"}`;
 }
 
 const ACCOUNTS_KEY = "hogarfix.accounts.v1";
@@ -66,7 +68,7 @@ function createSalt() {
 
 function startDemoSession(account) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ firstName: account.firstName, lastName: account.lastName, email: account.email, role: account.role }));
-  window.location.replace("app.html");
+  window.location.replace(account.role === "Proveedor" ? "inicio-proveedor.html" : "app.html");
 }
 
 registerForm?.addEventListener("submit", async (event) => {
@@ -112,6 +114,13 @@ registerForm?.addEventListener("submit", async (event) => {
 
 const loginForm = document.querySelector("#login-form");
 const loginMessage = document.querySelector("#login-message");
+const loginRole = document.querySelector("#login-role");
+const loginRegisterLink = document.querySelector("#login-register-link");
+if (loginRole) {
+  const role = new URLSearchParams(location.search).get("tipo") === "proveedor" ? "Proveedor" : "Cliente";
+  loginRole.textContent = role;
+  if (loginRegisterLink) loginRegisterLink.href = `registro.html?tipo=${role.toLowerCase()}`;
+}
 loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginMessage.textContent = "Verificando…";
@@ -140,8 +149,15 @@ if (appName || appRole) {
   try { session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch { session = null; }
   if (!session) window.location.replace("login.html");
   else {
+    if (session.role === "Proveedor" && location.pathname.endsWith("app.html")) window.location.replace("inicio-proveedor.html");
     if (appName) appName.textContent = `${session.firstName} ${session.lastName}`;
     if (appRole) appRole.textContent = session.role;
+    const clientFirstName = document.querySelector("#client-first-name");
+    if (clientFirstName) clientFirstName.textContent = session.firstName;
+    const providerGreeting = document.querySelector("#provider-greeting");
+    if (providerGreeting) providerGreeting.textContent = session.firstName;
+    const providerProfileName = document.querySelector("#provider-profile-name");
+    if (providerProfileName && !localStorage.getItem("hogarfix.provider.profile.v1")) providerProfileName.textContent = `${session.firstName} ${session.lastName}`;
   }
 }
 
@@ -159,6 +175,8 @@ if (providerSearchForm && providerGrid) {
   const resultCount = document.querySelector("#result-count");
   const noResults = document.querySelector("#no-results");
   let activeCategory = "";
+  const initialQuery = new URLSearchParams(location.search).get("q") || "";
+  queryInput.value = initialQuery;
   const updateResults = () => {
     const query = queryInput.value.trim().toLocaleLowerCase("es");
     let count = 0;
@@ -179,6 +197,7 @@ if (providerSearchForm && providerGrid) {
     document.querySelectorAll(".filter-chip").forEach((item) => item.setAttribute("aria-pressed", String(item.dataset.filter === activeCategory)));
     updateResults();
   }));
+  if (initialQuery) updateResults();
 }
 
 // Client demo flow: provider profile -> service request -> requests list.
@@ -212,7 +231,7 @@ bookingForm?.addEventListener("submit", (event) => {
   if (!bookingForm.reportValidity()) return;
   const formData = Object.fromEntries(new FormData(bookingForm));
   const requests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]");
-  const request = { id: `HF-${Date.now().toString().slice(-6)}`, provider: profile.name, service: formData.service || profile.service, date: formData.date, time: formData.time, address: formData.address, detail: formData.detail, status: "Pendiente" };
+  const request = { id: `HF-${Date.now().toString().slice(-6)}`, provider: profile.name, service: formData.service || profile.service, date: formData.date, time: formData.time, address: formData.address, detail: formData.detail, amount: 40000, status: "Pendiente" };
   localStorage.setItem("hogarfix.requests.v1", JSON.stringify([request, ...requests]));
   location.href = `reserva.html?id=${encodeURIComponent(request.id)}`;
 });
@@ -221,22 +240,38 @@ if (requestList) {
   let requests = [];
   try { requests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]"); } catch { requests = []; }
   const samples = [
-    { id: "HF-24081", provider: "Carlos Ramírez", service: "Electricidad", date: "18 oct 2026", time: "10:00 a. m.", status: "En proceso" },
-    { id: "HF-24075", provider: "Ana Torres", service: "Plomería", date: "21 oct 2026", time: "1:00 p. m.", status: "Pendiente" },
-    { id: "HF-23992", provider: "Juan Suárez", service: "Jardinería", date: "10 oct 2026", time: "8:00 a. m.", status: "Completada" },
-    { id: "HF-23910", provider: "Maribel Cruz", service: "Aseo general", date: "4 oct 2026", time: "3:30 p. m.", status: "Cancelada" }
+    { id: "HF-24081", provider: "Carlos Ramírez", service: "Electricidad", date: "25 ago, 2026", time: "10:00 am", detail: "Revisión e instalación eléctrica en el hogar.", amount: 85000, status: "En proceso" },
+    { id: "HF-24075", provider: "Ana Torres", service: "Plomería", date: "28 ago, 2026", time: "8:00 am", detail: "Revisión de tubería y grifo del baño.", amount: 60000, status: "Pendiente" },
+    { id: "HF-23992", provider: "Juan Suárez", service: "Jardinería", date: "12 jul, 2026", time: "1:00 pm", detail: "Mantenimiento de jardín.", amount: 70000, status: "Completada" },
+    { id: "HF-23910", provider: "Maribel Cruz", service: "Aseo general", date: "2 jul, 2026", time: "3:30 pm", detail: "Limpieza general del apartamento.", amount: 55000, status: "Cancelada" }
   ];
   const allRequests = [...requests, ...samples];
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const renderRequests = (filter = "Todas") => {
     const filtered = allRequests.filter((item) => filter === "Todas" || item.status === filter);
-    requestList.innerHTML = filtered.length ? filtered.map((item) => `<article class="request-card"><div class="request-icon" aria-hidden="true">⌂</div><div class="request-main"><p class="eyebrow">${escapeHTML(item.id)}</p><h2>${escapeHTML(item.service)}</h2><p>Profesional: <strong>${escapeHTML(item.provider)}</strong></p><p>${escapeHTML(item.date)} · ${escapeHTML(item.time)}</p></div><span class="request-status status-${escapeHTML(item.status.toLowerCase().replaceAll(" ", "-"))}">${escapeHTML(item.status)}</span><a class="button button-small" href="chat.html">Ver detalle</a></article>`).join("") : '<p class="empty-state">No tienes solicitudes en este estado.</p>';
+    requestList.innerHTML = filtered.length ? filtered.map((item) => `<article class="client-request-card"><div class="client-request-head"><div><h2>${escapeHTML(item.service)}</h2><p>${escapeHTML(item.provider)} · ${escapeHTML(item.date)}</p></div><span class="request-status status-${escapeHTML(item.status.toLowerCase().replaceAll(" ", "-"))}">● ${escapeHTML(item.status)}</span></div><div class="client-request-meta"><span>📅 ${escapeHTML(item.date)}</span><span>🕐 ${escapeHTML(item.time)}</span><strong>$${Number(item.amount || 0).toLocaleString("es-CO")}</strong></div><p class="client-request-description">${escapeHTML(item.detail || "Solicitud de servicio para el hogar.")}</p><div class="client-request-actions"><a href="perfil-proveedor.html?id=${encodeURIComponent(profileIdFromName(item.provider))}">Ver detalles</a><a href="chat.html?persona=${encodeURIComponent(item.provider)}">▢ Chat</a></div></article>`).join("") : '<p class="empty-state">No tienes solicitudes en este estado.</p>';
   };
-  renderRequests();
+  const initialStatus = new URLSearchParams(location.search).get("estado") || "Todas";
+  renderRequests(initialStatus);
+  document.querySelectorAll("[data-request-filter]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.requestFilter === initialStatus)));
   document.querySelectorAll("[data-request-filter]").forEach((button) => button.addEventListener("click", () => {
     document.querySelectorAll("[data-request-filter]").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
     renderRequests(button.dataset.requestFilter);
   }));
+}
+function profileIdFromName(name = "") {
+  return String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+const clientDashboardList = document.querySelector("#active-request-list");
+if (clientDashboardList) {
+  let clientRequests = [];
+  try { clientRequests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]"); } catch { clientRequests = []; }
+  if (clientRequests.length) {
+    const active = clientRequests.filter((item) => !["Completada", "Cancelada"].includes(item.status)).slice(0, 2);
+    clientDashboardList.innerHTML = active.length ? active.map((item) => `<a class="active-request" href="solicitudes.html"><span class="category-icon">⌂</span><span><strong>${safeText(item.service)}</strong><small>${safeText(item.provider)} · ${safeText(item.date)}</small></span><span class="request-status status-${safeText(item.status.toLowerCase().replaceAll(" ", "-"))}">● ${safeText(item.status)}</span></a>`).join("") : '<p class="empty-state">No tienes solicitudes activas. <a href="buscar.html">Busca un servicio</a></p>';
+    const counts = { Pendiente: "client-pending-count", "En proceso": "client-inprogress-count", Completada: "client-completed-count", Cancelada: "client-cancelled-count" };
+    Object.entries(counts).forEach(([status, id]) => { const target = document.getElementById(id); if (target) target.textContent = clientRequests.filter((item) => item.status === status).length; });
+  }
 }
 const confirmation = document.querySelector("#confirmation-details");
 if (confirmation) {
@@ -258,3 +293,131 @@ chatForm?.addEventListener("submit", (event) => {
   input.value = "";
   input.focus();
 });
+function selectClientChat(button) {
+  document.querySelectorAll("[data-client-chat]").forEach((item) => item.classList.toggle("active", item === button));
+  const name = document.querySelector("#client-chat-name");
+  const profession = document.querySelector("#client-chat-profession");
+  if (name) name.textContent = button.dataset.clientChat;
+  if (profession) profession.textContent = `${button.dataset.profession} · Disponible`;
+  const messages = document.querySelector("#chat-messages");
+  if (messages) messages.innerHTML = `<p class="chat-day">Hoy</p><p class="chat-bubble">Hola, soy ${safeText(button.dataset.clientChat)}. ¿En qué puedo ayudarte con el servicio?</p>`;
+}
+document.querySelectorAll("[data-client-chat]").forEach((button) => button.addEventListener("click", () => selectClientChat(button)));
+const desiredClientChat = new URLSearchParams(location.search).get("persona");
+const initialClientChat = [...document.querySelectorAll("[data-client-chat]")].find((button) => button.dataset.clientChat === desiredClientChat);
+if (initialClientChat) selectClientChat(initialClientChat);
+
+// Provider screens in WEB FINAL share one persistent demo request state.
+const PROVIDER_REQUESTS_KEY = "hogarfix.provider.requests.v1";
+const sampleProviderRequests = [
+  { id: "P-1001", client: "Juan Pérez", service: "Plomería", date: "26 ago, 2026 · 9:00 am", address: "Carrera 15 #20-20, Apto 501", detail: "Tengo una fuga en el lavaplatos que lleva varios días, el agua escurre por debajo del mueble.", amount: 75000, status: "Pendiente" },
+  { id: "P-1002", client: "Luis Fernández", service: "Plomería", date: "20 ago, 2026 · 8:00 am", address: "Transversal 93 #55-12", detail: "Revisión y mantenimiento general de fontanería.", amount: 55000, status: "Pendiente" },
+  { id: "P-1003", client: "María López", service: "Plomería", date: "27 ago, 2026 · 11:00 am", address: "Av. 68 #23-45, Casa 12", detail: "Cambio de grifo en el baño principal y revisión de tubería.", amount: 90000, status: "Aceptada" },
+  { id: "P-1004", client: "Carlos García", service: "Plomería", date: "24 ago, 2026 · 2:00 pm", address: "Calle 80 #40-30", detail: "Instalación de calentador de agua nuevo.", amount: 120000, status: "En proceso" },
+  { id: "P-1005", client: "Ana Ruiz", service: "Plomería", date: "15 ago, 2026 · 10:00 am", address: "Calle 45 #28-10", detail: "Reparación de tuberías de agua caliente.", amount: 65000, status: "Completada" }
+];
+function getProviderRequests() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(PROVIDER_REQUESTS_KEY) || "null");
+    return Array.isArray(stored) ? stored : sampleProviderRequests.map((item) => ({ ...item }));
+  } catch { return sampleProviderRequests.map((item) => ({ ...item })); }
+}
+function saveProviderRequests(items) { localStorage.setItem(PROVIDER_REQUESTS_KEY, JSON.stringify(items)); }
+function safeText(value) { return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
+function providerRequestCard(item, detail = false) {
+  const statusClass = item.status.toLowerCase().replaceAll(" ", "-");
+  const actions = item.status === "Pendiente"
+    ? `<button class="button button-small" data-provider-action="accept" data-id="${safeText(item.id)}">✓ Aceptar</button><button class="button button-small danger-button" data-provider-action="reject" data-id="${safeText(item.id)}">× Rechazar</button>`
+    : item.status === "Aceptada"
+      ? `<button class="button button-small" data-provider-action="start" data-id="${safeText(item.id)}">Marcar en proceso</button>`
+      : item.status === "En proceso"
+        ? `<button class="button button-small" data-provider-action="complete" data-id="${safeText(item.id)}">Marcar completo</button>`
+        : "";
+  const body = `<div class="provider-request-top"><div><h3>${safeText(item.client)}</h3><p>${safeText(item.service)} · ${safeText(item.date)}</p><p>${safeText(item.address)}</p></div><div class="provider-request-price"><strong>$${Number(item.amount).toLocaleString("es-CO")}</strong><small>Hace 3 horas</small></div></div><p class="provider-request-description">${safeText(item.detail)}</p><div class="provider-request-bottom"><span class="request-status status-${statusClass}">● ${safeText(item.status)}</span><div class="provider-request-actions">${actions}<a href="detalle-proveedor.html?id=${encodeURIComponent(item.id)}">Ver detalles</a><a href="mensajes-proveedor.html?chat=${encodeURIComponent(item.client)}">Chat</a></div></div>`;
+  return `<article class="provider-request-card ${detail ? "provider-request-detail-card" : ""}">${body}</article>`;
+}
+function renderProviderDashboard() {
+  const requests = getProviderRequests();
+  const pending = document.querySelector("#provider-dashboard-requests");
+  const inProgress = document.querySelector("#provider-inprogress");
+  if (pending) pending.innerHTML = requests.filter((item) => item.status === "Pendiente").slice(0, 2).map((item) => providerRequestCard(item)).join("") || '<p class="empty-state">No tienes solicitudes nuevas.</p>';
+  if (inProgress) inProgress.innerHTML = requests.filter((item) => item.status === "En proceso").map((item) => providerRequestCard(item)).join("") || '<p class="empty-state">No tienes servicios en proceso.</p>';
+  const count = document.querySelector("#provider-pending-count");
+  if (count) count.textContent = requests.filter((item) => item.status === "Pendiente").length;
+}
+function renderProviderRequestList(filter = "Todas") {
+  const target = document.querySelector("#provider-request-list");
+  if (!target) return;
+  const items = getProviderRequests().filter((item) => filter === "Todas" || item.status === filter);
+  target.innerHTML = items.map((item) => providerRequestCard(item)).join("") || '<p class="empty-state">No hay solicitudes en este estado.</p>';
+}
+renderProviderDashboard();
+renderProviderRequestList(new URLSearchParams(location.search).get("estado") || "Todas");
+document.querySelectorAll("[data-provider-filter]").forEach((button) => {
+  if (button.dataset.providerFilter === new URLSearchParams(location.search).get("estado")) {
+    document.querySelectorAll("[data-provider-filter]").forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+  }
+  button.addEventListener("click", () => {
+    document.querySelectorAll("[data-provider-filter]").forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+    renderProviderRequestList(button.dataset.providerFilter);
+  });
+});
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-provider-action]");
+  if (!button) return;
+  const requests = getProviderRequests();
+  const request = requests.find((item) => item.id === button.dataset.id);
+  if (!request) return;
+  const next = { accept: "Aceptada", reject: "Rechazada", start: "En proceso", complete: "Completada" }[button.dataset.providerAction];
+  if (next) request.status = next;
+  saveProviderRequests(requests);
+  renderProviderDashboard();
+  const active = document.querySelector("[data-provider-filter][aria-pressed=true]")?.dataset.providerFilter || new URLSearchParams(location.search).get("estado") || "Todas";
+  renderProviderRequestList(active);
+  renderProviderRequestDetail();
+});
+function renderProviderRequestDetail() {
+  const target = document.querySelector("#provider-request-detail");
+  if (!target) return;
+  const id = new URLSearchParams(location.search).get("id");
+  const request = getProviderRequests().find((item) => item.id === id) || getProviderRequests()[0];
+  target.innerHTML = request ? providerRequestCard(request, true) : '<p class="empty-state">No encontramos esa solicitud.</p>';
+}
+renderProviderRequestDetail();
+const providerProfileForm = document.querySelector("#provider-profile-form");
+if (providerProfileForm) {
+  try {
+    const saved = JSON.parse(localStorage.getItem("hogarfix.provider.profile.v1") || "null");
+    if (saved) Object.entries(saved).forEach(([key, value]) => { if (providerProfileForm.elements[key]) providerProfileForm.elements[key].value = value; });
+  } catch { /* Keep the Figma demo defaults. */ }
+  providerProfileForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(providerProfileForm));
+    localStorage.setItem("hogarfix.provider.profile.v1", JSON.stringify(values));
+    const name = document.querySelector("#provider-profile-name");
+    if (name) name.textContent = values.name;
+    document.querySelector("#provider-profile-message").textContent = "Cambios guardados en este navegador.";
+  });
+}
+const providerMessageForm = document.querySelector("#provider-chat-form");
+providerMessageForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = providerMessageForm.elements.message;
+  if (!input.value.trim()) return;
+  const bubble = document.createElement("p");
+  bubble.className = "chat-bubble chat-own";
+  bubble.textContent = input.value.trim();
+  document.querySelector("#provider-chat-messages")?.append(bubble);
+  input.value = "";
+  input.focus();
+});
+document.querySelectorAll("[data-chat-person]").forEach((button) => button.addEventListener("click", () => {
+  document.querySelectorAll("[data-chat-person]").forEach((item) => item.classList.toggle("active", item === button));
+  const name = document.querySelector("#active-chat-person");
+  if (name) name.textContent = button.dataset.chatPerson;
+}));
+const desiredProviderChat = new URLSearchParams(location.search).get("chat");
+const initialProviderChat = [...document.querySelectorAll("[data-chat-person]")].find((button) => button.dataset.chatPerson === desiredProviderChat);
+if (initialProviderChat) initialProviderChat.click();
+const conversationSearch = document.querySelector("#conversation-search");
+conversationSearch?.addEventListener("input", () => document.querySelectorAll("[data-chat-person]").forEach((item) => { item.hidden = !item.textContent.toLocaleLowerCase("es").includes(conversationSearch.value.toLocaleLowerCase("es")); }));

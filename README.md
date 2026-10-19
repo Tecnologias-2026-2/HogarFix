@@ -102,3 +102,18 @@ Explicar cómo correr el proyecto.
 # Acceso de demostración
 
 El registro y el inicio de sesión permiten recorrer el prototipo y entrar a `app.html`. Las cuentas de demostración se guardan en el almacenamiento local del navegador; no existe conexión a una base de datos ni un servidor de autenticación. Por eso una cuenta solo funciona en el mismo navegador y dispositivo donde se creó. No usar contraseñas reales.
+
+## Pantallas implementadas de WEB FINAL
+
+La navegación estática cubre los recorridos de cliente y proveedor del prototipo:
+
+- **Acceso público:** `index.html`, `registro.html` y `login.html`.
+- **Cliente:** `app.html` (inicio), `buscar.html`, `perfil-proveedor.html`, `reserva.html` (confirmación), `solicitudes.html` y `chat.html`.
+- **Proveedor:** `inicio-proveedor.html`, `solicitudes-proveedor.html`, `detalle-proveedor.html`, `mi-perfil-proveedor.html`, `ingresos-proveedor.html` y `mensajes-proveedor.html`.
+- Los ocho profesionales del prototipo se muestran mediante perfiles y conversaciones parametrizados; los estados de solicitudes se manejan desde las acciones de aceptar, rechazar, iniciar y completar.
+
+Estas pantallas son una demostración de front-end para GitHub Pages. Registro, sesión, perfil, mensajes y solicitudes se guardan únicamente en el almacenamiento local del navegador; no se conectan a Firebase ni a un servicio de autenticación. Usa datos de prueba, no contraseñas reales.
+
+### Ejecutar localmente
+
+Abre la carpeta clonada en Visual Studio Code y ejecuta `index.html` con la extensión Live Server, o publica la rama `main` desde la raíz del repositorio con GitHub Pages.
