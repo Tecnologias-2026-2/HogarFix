@@ -46,6 +46,48 @@ if (registerRole) {
 
 const ACCOUNTS_KEY = "hogarfix.accounts.v1";
 const SESSION_KEY = "hogarfix.session.v1";
+const CLIENT_REQUESTS_KEY = "hogarfix.requests.v1";
+const CHAT_THREADS_KEY = "hogarfix.chat-threads.v1";
+
+function getCurrentSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); }
+  catch { return null; }
+}
+function readStoredArray(key) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch { return []; }
+}
+function writeStoredArray(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+function normalizeKey(value = "") {
+  return String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+function readChatThreads() {
+  try { return JSON.parse(localStorage.getItem(CHAT_THREADS_KEY) || "{}"); }
+  catch { return {}; }
+}
+function writeChatThread(key, messages) {
+  const threads = readChatThreads();
+  threads[key] = messages;
+  localStorage.setItem(CHAT_THREADS_KEY, JSON.stringify(threads));
+}
+function getClientThreadKey(providerName, ownerEmail = getCurrentSession()?.email || "cliente-demo") {
+  const owner = ownerEmail;
+  return `${normalizeKey(owner)}::${normalizeKey(providerName)}`;
+}
+function getProviderName() {
+  const savedProfile = (() => { try { return JSON.parse(localStorage.getItem("hogarfix.provider.profile.v1") || "null"); } catch { return null; } })();
+  const session = getCurrentSession();
+  return savedProfile?.name || [session?.firstName, session?.lastName].filter(Boolean).join(" ");
+}
+function getProviderThreadKey(clientName) {
+  const providerName = getProviderName();
+  const request = readStoredArray(CLIENT_REQUESTS_KEY).find((item) => normalizeKey(item.clientName) === normalizeKey(clientName) && normalizeKey(item.provider) === normalizeKey(providerName));
+  return getClientThreadKey(providerName || "proveedor-demo", request?.ownerEmail || normalizeKey(clientName));
+}
 
 function getAccounts() {
   try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "[]"); }
@@ -229,23 +271,36 @@ const bookingForm = document.querySelector("#booking-form");
 bookingForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   if (!bookingForm.reportValidity()) return;
-  const formData = Object.fromEntries(new FormData(bookingForm));
-  const requests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]");
-  const request = { id: `HF-${Date.now().toString().slice(-6)}`, provider: profile.name, service: formData.service || profile.service, date: formData.date, time: formData.time, address: formData.address, detail: formData.detail, amount: 40000, status: "Pendiente" };
-  localStorage.setItem("hogarfix.requests.v1", JSON.stringify([request, ...requests]));
-  location.href = `reserva.html?id=${encodeURIComponent(request.id)}`;
+  const message = document.querySelector("#booking-message");
+  try {
+    const formData = Object.fromEntries(new FormData(bookingForm));
+    const session = getCurrentSession();
+    const requests = readStoredArray(CLIENT_REQUESTS_KEY);
+    const request = {
+      id: `HF-${globalThis.crypto?.randomUUID?.() || Date.now().toString(36)}`,
+      ownerEmail: session?.email || "cliente-demo",
+      clientName: session ? `${session.firstName} ${session.lastName}` : "Cliente",
+      provider: profile.name,
+      service: formData.service || profile.service,
+      date: formData.date,
+      time: formData.time,
+      address: String(formData.address).trim(),
+      detail: String(formData.detail).trim(),
+      amount: 40000,
+      status: "Pendiente",
+      createdAt: new Date().toISOString()
+    };
+    writeStoredArray(CLIENT_REQUESTS_KEY, [request, ...requests]);
+    if (!readStoredArray(CLIENT_REQUESTS_KEY).some((saved) => saved.id === request.id)) throw new Error("No se pudo confirmar el guardado en este navegador.");
+    location.href = `reserva.html?id=${encodeURIComponent(request.id)}`;
+  } catch (error) {
+    if (message) message.textContent = error.message || "No se pudo guardar la solicitud en este navegador.";
+  }
 });
 const requestList = document.querySelector("#request-list");
 if (requestList) {
-  let requests = [];
-  try { requests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]"); } catch { requests = []; }
-  const samples = [
-    { id: "HF-24081", provider: "Carlos Ramírez", service: "Electricidad", date: "25 ago, 2026", time: "10:00 am", detail: "Revisión e instalación eléctrica en el hogar.", amount: 85000, status: "En proceso" },
-    { id: "HF-24075", provider: "Ana Torres", service: "Plomería", date: "28 ago, 2026", time: "8:00 am", detail: "Revisión de tubería y grifo del baño.", amount: 60000, status: "Pendiente" },
-    { id: "HF-23992", provider: "Juan Suárez", service: "Jardinería", date: "12 jul, 2026", time: "1:00 pm", detail: "Mantenimiento de jardín.", amount: 70000, status: "Completada" },
-    { id: "HF-23910", provider: "Maribel Cruz", service: "Aseo general", date: "2 jul, 2026", time: "3:30 pm", detail: "Limpieza general del apartamento.", amount: 55000, status: "Cancelada" }
-  ];
-  const allRequests = [...requests, ...samples];
+  const session = getCurrentSession();
+  const allRequests = readStoredArray(CLIENT_REQUESTS_KEY).filter((item) => !session?.email || !item.ownerEmail || item.ownerEmail === session.email);
   const escapeHTML = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
   const renderRequests = (filter = "Todas") => {
     const filtered = allRequests.filter((item) => filter === "Todas" || item.status === filter);
@@ -264,9 +319,9 @@ function profileIdFromName(name = "") {
 }
 const clientDashboardList = document.querySelector("#active-request-list");
 if (clientDashboardList) {
-  let clientRequests = [];
-  try { clientRequests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]"); } catch { clientRequests = []; }
-  if (clientRequests.length) {
+  const session = getCurrentSession();
+  const clientRequests = readStoredArray(CLIENT_REQUESTS_KEY).filter((item) => !session?.email || !item.ownerEmail || item.ownerEmail === session.email);
+  {
     const active = clientRequests.filter((item) => !["Completada", "Cancelada"].includes(item.status)).slice(0, 2);
     clientDashboardList.innerHTML = active.length ? active.map((item) => `<a class="active-request" href="solicitudes.html"><span class="category-icon">⌂</span><span><strong>${safeText(item.service)}</strong><small>${safeText(item.provider)} · ${safeText(item.date)}</small></span><span class="request-status status-${safeText(item.status.toLowerCase().replaceAll(" ", "-"))}">● ${safeText(item.status)}</span></a>`).join("") : '<p class="empty-state">No tienes solicitudes activas. <a href="buscar.html">Busca un servicio</a></p>';
     const counts = { Pendiente: "client-pending-count", "En proceso": "client-inprogress-count", Completada: "client-completed-count", Cancelada: "client-cancelled-count" };
@@ -276,36 +331,57 @@ if (clientDashboardList) {
 const confirmation = document.querySelector("#confirmation-details");
 if (confirmation) {
   const wantedId = new URLSearchParams(location.search).get("id");
-  let requests = [];
-  try { requests = JSON.parse(localStorage.getItem("hogarfix.requests.v1") || "[]"); } catch { requests = []; }
-  const request = requests.find((item) => item.id === wantedId) || requests[0];
-  if (request) confirmation.innerHTML = `<p><strong>Profesional:</strong> ${request.provider}</p><p><strong>Servicio:</strong> ${request.service}</p><p><strong>Fecha y hora:</strong> ${request.date} · ${request.time}</p><p><strong>Estado:</strong> <span class="request-status status-pendiente">${request.status}</span></p>`;
+  const session = getCurrentSession();
+  const requests = readStoredArray(CLIENT_REQUESTS_KEY).filter((item) => !session?.email || !item.ownerEmail || item.ownerEmail === session.email);
+  const request = requests.find((item) => item.id === wantedId);
+  if (request) confirmation.innerHTML = `<p><strong>Profesional:</strong> ${safeText(request.provider)}</p><p><strong>Servicio:</strong> ${safeText(request.service)}</p><p><strong>Fecha y hora:</strong> ${safeText(request.date)} · ${safeText(request.time)}</p><p><strong>Dirección:</strong> ${safeText(request.address)}</p><p><strong>Estado:</strong> <span class="request-status status-pendiente">${safeText(request.status)}</span></p>`;
+  else confirmation.innerHTML = '<p>No encontramos esa solicitud en este navegador. Abre “Mis solicitudes” para ver tus datos guardados.</p>';
 }
 const chatForm = document.querySelector("#chat-form");
+let activeClientChat = null;
+function renderChatMessages(target, providerName, key, emptyGreeting) {
+  if (!target) return;
+  const messages = readChatThreads()[key] || [];
+  target.replaceChildren();
+  const day = document.createElement("p"); day.className = "chat-day"; day.textContent = "Conversación"; target.append(day);
+  if (!messages.length) {
+    const greeting = document.createElement("p"); greeting.className = "chat-bubble"; greeting.textContent = emptyGreeting; target.append(greeting); return;
+  }
+  messages.forEach((message) => {
+    const bubble = document.createElement("p");
+    bubble.className = `chat-bubble${message.sender === "me" ? " chat-own" : ""}`;
+    bubble.textContent = message.text;
+    target.append(bubble);
+  });
+  target.scrollTop = target.scrollHeight;
+}
 chatForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   const input = chatForm.elements.message;
-  if (!input.value.trim()) return;
-  const bubble = document.createElement("p");
-  bubble.className = "chat-bubble chat-own";
-  bubble.textContent = input.value.trim();
-  document.querySelector("#chat-messages")?.append(bubble);
-  input.value = "";
+  const text = input.value.trim();
+  if (!text || !activeClientChat) return;
+  const key = getClientThreadKey(activeClientChat.dataset.clientChat);
+  const messages = readChatThreads()[key] || [];
+  messages.push({ sender: "me", text, createdAt: new Date().toISOString() });
+  try { writeChatThread(key, messages); renderChatMessages(document.querySelector("#chat-messages"), activeClientChat.dataset.clientChat, key, ""); input.value = ""; }
+  catch { const notice = document.querySelector("#chat-storage-message"); if (notice) notice.textContent = "No se pudo guardar el mensaje en este navegador."; }
   input.focus();
 });
 function selectClientChat(button) {
+  activeClientChat = button;
   document.querySelectorAll("[data-client-chat]").forEach((item) => item.classList.toggle("active", item === button));
   const name = document.querySelector("#client-chat-name");
   const profession = document.querySelector("#client-chat-profession");
   if (name) name.textContent = button.dataset.clientChat;
   if (profession) profession.textContent = `${button.dataset.profession} · Disponible`;
-  const messages = document.querySelector("#chat-messages");
-  if (messages) messages.innerHTML = `<p class="chat-day">Hoy</p><p class="chat-bubble">Hola, soy ${safeText(button.dataset.clientChat)}. ¿En qué puedo ayudarte con el servicio?</p>`;
+  const key = getClientThreadKey(button.dataset.clientChat);
+  renderChatMessages(document.querySelector("#chat-messages"), button.dataset.clientChat, key, `Hola, soy ${button.dataset.clientChat}. ¿En qué puedo ayudarte con el servicio?`);
 }
 document.querySelectorAll("[data-client-chat]").forEach((button) => button.addEventListener("click", () => selectClientChat(button)));
 const desiredClientChat = new URLSearchParams(location.search).get("persona");
 const initialClientChat = [...document.querySelectorAll("[data-client-chat]")].find((button) => button.dataset.clientChat === desiredClientChat);
 if (initialClientChat) selectClientChat(initialClientChat);
+else { const firstClientChat = document.querySelector("[data-client-chat]"); if (firstClientChat) selectClientChat(firstClientChat); }
 
 // Provider screens in WEB FINAL share one persistent demo request state.
 const PROVIDER_REQUESTS_KEY = "hogarfix.provider.requests.v1";
@@ -317,12 +393,24 @@ const sampleProviderRequests = [
   { id: "P-1005", client: "Ana Ruiz", service: "Plomería", date: "15 ago, 2026 · 10:00 am", address: "Calle 45 #28-10", detail: "Reparación de tuberías de agua caliente.", amount: 65000, status: "Completada" }
 ];
 function getProviderRequests() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(PROVIDER_REQUESTS_KEY) || "null");
-    return Array.isArray(stored) ? stored : sampleProviderRequests.map((item) => ({ ...item }));
-  } catch { return sampleProviderRequests.map((item) => ({ ...item })); }
+  let stored = readStoredArray(PROVIDER_REQUESTS_KEY);
+  const providerName = getProviderName();
+  const customerRequests = readStoredArray(CLIENT_REQUESTS_KEY)
+    .filter((item) => normalizeKey(item.provider) === normalizeKey(providerName))
+    .map((item) => ({ ...item, client: item.clientName, date: `${item.date} · ${item.time}`, source: "client" }));
+  if (!stored.length && !customerRequests.length) return sampleProviderRequests.map((item) => ({ ...item }));
+  return [...customerRequests, ...stored];
 }
-function saveProviderRequests(items) { localStorage.setItem(PROVIDER_REQUESTS_KEY, JSON.stringify(items)); }
+function saveProviderRequests(items) {
+  const localItems = items.filter((item) => item.source !== "client");
+  writeStoredArray(PROVIDER_REQUESTS_KEY, localItems);
+  const customerRequests = readStoredArray(CLIENT_REQUESTS_KEY);
+  items.filter((item) => item.source === "client").forEach((item) => {
+    const target = customerRequests.find((request) => request.id === item.id);
+    if (target) target.status = item.status;
+  });
+  writeStoredArray(CLIENT_REQUESTS_KEY, customerRequests);
+}
 function safeText(value) { return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
 function providerRequestCard(item, detail = false) {
   const statusClass = item.status.toLowerCase().replaceAll(" ", "-");
@@ -400,24 +488,31 @@ if (providerProfileForm) {
   });
 }
 const providerMessageForm = document.querySelector("#provider-chat-form");
+let activeProviderChat = null;
 providerMessageForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   const input = providerMessageForm.elements.message;
   if (!input.value.trim()) return;
-  const bubble = document.createElement("p");
-  bubble.className = "chat-bubble chat-own";
-  bubble.textContent = input.value.trim();
-  document.querySelector("#provider-chat-messages")?.append(bubble);
-  input.value = "";
+  if (!activeProviderChat) return;
+  const key = getProviderThreadKey(activeProviderChat.dataset.chatPerson);
+  const messages = readChatThreads()[key] || [];
+  messages.push({ sender: "me", text: input.value.trim(), createdAt: new Date().toISOString() });
+  try { writeChatThread(key, messages); renderChatMessages(document.querySelector("#provider-chat-messages"), activeProviderChat.dataset.chatPerson, key, "La conversación aún no tiene mensajes."); input.value = ""; }
+  catch { return; }
   input.focus();
 });
-document.querySelectorAll("[data-chat-person]").forEach((button) => button.addEventListener("click", () => {
+function selectProviderChat(button) {
+  activeProviderChat = button;
   document.querySelectorAll("[data-chat-person]").forEach((item) => item.classList.toggle("active", item === button));
   const name = document.querySelector("#active-chat-person");
   if (name) name.textContent = button.dataset.chatPerson;
-}));
+  const key = getProviderThreadKey(button.dataset.chatPerson);
+  renderChatMessages(document.querySelector("#provider-chat-messages"), button.dataset.chatPerson, key, `Hola ${button.dataset.chatPerson}, ¿en qué puedo ayudarte?`);
+}
+document.querySelectorAll("[data-chat-person]").forEach((button) => button.addEventListener("click", () => selectProviderChat(button)));
 const desiredProviderChat = new URLSearchParams(location.search).get("chat");
 const initialProviderChat = [...document.querySelectorAll("[data-chat-person]")].find((button) => button.dataset.chatPerson === desiredProviderChat);
-if (initialProviderChat) initialProviderChat.click();
+if (initialProviderChat) selectProviderChat(initialProviderChat);
+else { const firstProviderChat = document.querySelector("[data-chat-person]"); if (firstProviderChat) selectProviderChat(firstProviderChat); }
 const conversationSearch = document.querySelector("#conversation-search");
 conversationSearch?.addEventListener("input", () => document.querySelectorAll("[data-chat-person]").forEach((item) => { item.hidden = !item.textContent.toLocaleLowerCase("es").includes(conversationSearch.value.toLocaleLowerCase("es")); }));

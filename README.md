@@ -117,3 +117,7 @@ Estas pantallas son una demostración de front-end para GitHub Pages. Registro, 
 ### Ejecutar localmente
 
 Abre la carpeta clonada en Visual Studio Code y ejecuta `index.html` con la extensión Live Server, o publica la rama `main` desde la raíz del repositorio con GitHub Pages.
+
+## Estado de persistencia de la versión actual
+
+Las solicitudes, sus estados y los mensajes se guardan en `localStorage` del navegador. Permanecen al navegar y recargar en el mismo navegador y sitio, pero no se comparten entre navegadores o dispositivos. La autenticación de esta versión también es una demostración local; no uses contraseñas reales. Para sincronización entre usuarios y dispositivos, hace falta configurar Firebase Authentication y Firestore con reglas de acceso por usuario/rol.
