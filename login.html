@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inicia sesión en HogarFix.">
+  <title>Iniciar sesión | HogarFix</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/main.js" defer></script>
+</head>
+<body class="register-page">
+  <a class="skip-link" href="#login-form">Saltar al formulario</a>
+  <main class="register-shell">
+    <section class="register-card" aria-labelledby="login-title">
+      <a class="register-logo" href="index.html" aria-label="Volver a HogarFix"><img src="assets/logo.png" alt="HogarFix" width="48" height="48"></a>
+      <div class="register-title-row">
+        <a class="back-link" href="index.html" aria-label="Volver al inicio">←</a>
+        <div><h1 id="login-title">Inicia sesión</h1><p>Bienvenido de nuevo a HogarFix</p></div>
+      </div>
+      <form id="login-form" novalidate onsubmit="return false;">
+        <label class="login-field">Correo electrónico<input name="email" type="email" autocomplete="email" placeholder="tu@correo.com" required></label>
+        <label class="login-field">Contraseña<input name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required></label>
+        <button class="button register-submit" type="submit">Iniciar sesión</button>
+        <p class="register-message" id="login-message" role="status" aria-live="polite"></p>
+      </form>
+      <p class="register-login">¿No tienes cuenta? <a href="registro.html?tipo=cliente">Crea tu cuenta</a></p>
+    </section>
+  </main>
+</body>
+</html>

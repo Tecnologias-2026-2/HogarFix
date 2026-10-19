@@ -99,3 +99,6 @@ Explicar brevemente qué contiene cada carpeta.
 🚀 8. Instalación y Ejecución
 
 Explicar cómo correr el proyecto.
+# Acceso de demostración
+
+El registro y el inicio de sesión permiten recorrer el prototipo y entrar a `app.html`. Las cuentas de demostración se guardan en el almacenamiento local del navegador; no existe conexión a una base de datos ni un servidor de autenticación. Por eso una cuenta solo funciona en el mismo navegador y dispositivo donde se creó. No usar contraseñas reales.

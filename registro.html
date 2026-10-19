@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crea tu cuenta de HogarFix.">
+  <title>Crea tu cuenta | HogarFix</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/main.js" defer></script>
+</head>
+<body class="register-page">
+  <a class="skip-link" href="#register-form">Saltar al formulario</a>
+  <main class="register-shell">
+    <section class="register-card" aria-labelledby="register-title">
+      <a class="register-logo" href="index.html" aria-label="Volver a HogarFix"><img src="assets/logo.png" alt="HogarFix" width="48" height="48"></a>
+      <div class="register-title-row">
+        <a class="back-link" href="index.html#servicios" aria-label="Volver al inicio">←</a>
+        <div><h1 id="register-title">Crea tu cuenta</h1><p>Como <strong id="register-role">Cliente</strong></p></div>
+      </div>
+      <form id="register-form" novalidate onsubmit="return false;">
+        <div class="form-row">
+          <label>Nombre<input name="firstName" type="text" autocomplete="given-name" placeholder="Tu nombre" required></label>
+          <label>Apellido<input name="lastName" type="text" autocomplete="family-name" placeholder="Tu apellido" required></label>
+        </div>
+        <label>Correo electrónico<input name="email" type="email" autocomplete="email" placeholder="tu@correo.com" required></label>
+        <div class="form-row">
+          <label>Contraseña<input name="password" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" minlength="8" required></label>
+          <label>Confirmar<input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repite la contraseña" minlength="8" required></label>
+        </div>
+        <label class="terms-row"><input name="terms" type="checkbox" required><span>Acepto los <a href="#terms">Términos y Condiciones</a> y la <a href="#privacy">Política de Privacidad</a>.</span></label>
+        <button class="button register-submit" type="submit">Crear cuenta</button>
+        <p class="register-message" id="register-message" role="status" aria-live="polite"></p>
+      </form>
+      <p class="register-login">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
+    </section>
+  </main>
+</body>
+</html>

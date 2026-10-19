@@ -160,6 +160,43 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
 .high-contrast { --ink: #000; --muted: #222; --blue: #003bb8; }
 .high-contrast .section-soft, .high-contrast .profile-card { background: #fff; }
 
+.register-page { min-height: 100vh; background: #f8fafc; }
+.register-shell { display: grid; min-height: 100vh; place-items: center; padding: 40px 16px; }
+.register-card { width: min(100%, 512px); padding: 40px; border: 1px solid #f1f5f9; border-radius: 24px; background: #fff; box-shadow: 0 10px 24px rgb(15 23 42 / 12%); }
+.register-logo { display: flex; justify-content: center; margin-bottom: 20px; }
+.register-logo img { width: 48px; height: 48px; border-radius: 10px; }
+.register-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.back-link { display: grid; width: 24px; height: 40px; place-items: center; color: #90a1b9; font-size: 24px; text-decoration: none; }
+.register-title-row h1 { margin: 0; font-size: 20px; line-height: 28px; }
+.register-title-row p { margin: 0; color: var(--muted); font-size: 12px; }
+.register-card form { display: grid; gap: 16px; }
+.form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.register-card label:not(.terms-row) { display: grid; gap: 4px; color: #314158; font-size: 14px; font-weight: 550; }
+  .register-card .login-field { display: grid; gap: 4px; color: #314158; font-size: 14px; font-weight: 550; }
+.register-card input:not([type="checkbox"]) { width: 100%; min-width: 0; height: 44px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 12px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
+.register-card input::placeholder { color: #90a1b9; }
+.register-card input:focus { border-color: var(--blue); outline: 3px solid rgb(21 93 252 / 12%); }
+.terms-row { display: flex; align-items: flex-start; gap: 8px; color: #45556c; font-size: 12px; line-height: 1.5; }
+.terms-row input { flex: 0 0 auto; margin-top: 2px; accent-color: var(--blue); }
+.terms-row a, .register-login a { color: var(--blue); text-decoration: none; }
+.terms-row a:hover, .register-login a:hover { text-decoration: underline; }
+.register-submit { width: 100%; min-height: 52px; }
+.register-message { margin: 0; color: #9a3412; font-size: 13px; }
+.register-message:empty { display: none; }
+.register-login { margin: 20px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+.register-card button:disabled { cursor: wait; opacity: .7; }
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px max(24px, calc((100% - 1152px) / 2)); background: #fff; box-shadow: 0 1px 4px rgb(15 23 42 / 8%); }
+.app-content { width: min(100% - 40px, 800px); margin: 72px auto; }
+.app-content > h1 { margin: 0; font-size: clamp(32px, 5vw, 44px); }
+.demo-label { display: inline-block; margin: 0 0 12px; padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: var(--blue); font-size: 12px; font-weight: 700; }
+.app-subtitle { margin: 8px 0 30px; color: var(--muted); }
+.app-card { display: flex; align-items: flex-start; gap: 20px; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 6%); }
+.app-card-icon { display: grid; flex: 0 0 54px; height: 54px; place-items: center; border-radius: 14px; background: #eff6ff; color: var(--blue); font-size: 32px; }
+.app-card h2 { font-size: 22px; }
+.app-card p, .app-note { color: var(--muted); line-height: 1.6; }
+.app-card .button { margin-top: 8px; }
+.app-note { margin-top: 22px; font-size: 13px; }
+
 @media (max-width: 900px) {
   .nav-wrap { gap: 16px; }
   .primary-nav { gap: 14px; }
@@ -197,6 +234,10 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
   .cta-actions { flex-direction: column; align-items: stretch; margin-top: 24px; }
   .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 20px; }
   .footer-bottom { flex-direction: column; margin-top: 32px; }
+}
+@media (max-width: 520px) {
+  .register-card { padding: 28px 22px; }
+  .form-row { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
