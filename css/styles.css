@@ -196,6 +196,16 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
 .app-card p, .app-note { color: var(--muted); line-height: 1.6; }
 .app-card .button { margin-top: 8px; }
 .app-note { margin-top: 22px; font-size: 13px; }
+.app-services { margin-top: 56px; scroll-margin-top: 24px; }
+.app-services > h2 { margin: 0 0 22px; font-size: clamp(24px, 4vw, 32px); }
+.app-service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.app-service-card { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.app-service-card > span { font-size: 28px; }
+.app-service-card h3 { margin: 12px 0 6px; font-size: 18px; }
+.app-service-card p { min-height: 42px; margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.app-service-card strong { color: var(--blue); font-size: 14px; }
+.app-back-link { display: inline-block; margin-top: 20px; color: var(--blue); font-size: 14px; text-decoration: none; }
+.app-back-link:hover { text-decoration: underline; }
 
 @media (max-width: 900px) {
   .nav-wrap { gap: 16px; }
@@ -238,6 +248,7 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
 @media (max-width: 520px) {
   .register-card { padding: 28px 22px; }
   .form-row { grid-template-columns: 1fr; }
+  .app-service-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
