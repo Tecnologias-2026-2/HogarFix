@@ -1,13 +1,15 @@
 Para Completar por grupo
 
-🌐 Nombre del Proyecto
+🌐 HogarFix
 
-Escribe aquí una descripción corta del proyecto.
+Proyecto enfocado en la prestación de servicios del hogar de manera fácil y aceesible.
 
 👥 Integrantes
 
-Nombre completo – Código
-Nombre completo – Código
+Laura Valentina Bojacá Sánchez – 1202561
+Sebastián Gómez Ramírez – 1202821
+Juan José Gutiérrez-1202
+Sebastián Torres -1202
 
 🎯 1. Objetivo General
 
