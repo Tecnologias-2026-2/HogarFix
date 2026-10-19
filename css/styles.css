@@ -38,6 +38,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid #fdbd2d; outline-offs
 .primary-nav a, .login-link { color: #45556c; font-size: 14px; text-decoration: none; }
 .primary-nav a:hover, .login-link:hover { color: var(--blue); }
 .nav-actions { gap: 12px; }
+.logged-user { color: #45556c; font-size: 13px; white-space: nowrap; }
+.logged-user strong { color: var(--ink); }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; border: 1px solid transparent; border-radius: 12px; background: var(--blue); color: #fff; font-size: 14px; font-weight: 650; text-decoration: none; transition: transform .18s ease, background .18s ease; }
 .button:hover { transform: translateY(-1px); background: #0f4fe0; }
 .button-small { min-height: 32px; padding: 6px 12px; font-size: 12px; }
@@ -185,27 +187,6 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
 .register-message:empty { display: none; }
 .register-login { margin: 20px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
 .register-card button:disabled { cursor: wait; opacity: .7; }
-.app-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px max(24px, calc((100% - 1152px) / 2)); background: #fff; box-shadow: 0 1px 4px rgb(15 23 42 / 8%); }
-.app-content { width: min(100% - 40px, 800px); margin: 72px auto; }
-.app-content > h1 { margin: 0; font-size: clamp(32px, 5vw, 44px); }
-.demo-label { display: inline-block; margin: 0 0 12px; padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: var(--blue); font-size: 12px; font-weight: 700; }
-.app-subtitle { margin: 8px 0 30px; color: var(--muted); }
-.app-card { display: flex; align-items: flex-start; gap: 20px; padding: 28px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 6%); }
-.app-card-icon { display: grid; flex: 0 0 54px; height: 54px; place-items: center; border-radius: 14px; background: #eff6ff; color: var(--blue); font-size: 32px; }
-.app-card h2 { font-size: 22px; }
-.app-card p, .app-note { color: var(--muted); line-height: 1.6; }
-.app-card .button { margin-top: 8px; }
-.app-note { margin-top: 22px; font-size: 13px; }
-.app-services { margin-top: 56px; scroll-margin-top: 24px; }
-.app-services > h2 { margin: 0 0 22px; font-size: clamp(24px, 4vw, 32px); }
-.app-service-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.app-service-card { padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
-.app-service-card > span { font-size: 28px; }
-.app-service-card h3 { margin: 12px 0 6px; font-size: 18px; }
-.app-service-card p { min-height: 42px; margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
-.app-service-card strong { color: var(--blue); font-size: 14px; }
-.app-back-link { display: inline-block; margin-top: 20px; color: var(--blue); font-size: 14px; text-decoration: none; }
-.app-back-link:hover { text-decoration: underline; }
 
 @media (max-width: 900px) {
   .nav-wrap { gap: 16px; }
@@ -248,7 +229,6 @@ h2 { margin: 0; font-size: clamp(28px, 3vw, 36px); font-weight: 800; line-height
 @media (max-width: 520px) {
   .register-card { padding: 28px 22px; }
   .form-row { grid-template-columns: 1fr; }
-  .app-service-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
