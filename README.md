@@ -1,58 +1,88 @@
-Para Completar por grupo
+# 🌐 HogarFix
+**Calidad en cada arreglo**
 
-🌐 HogarFix
+Proyecto enfocado en conectar a personas que necesitan servicios para el hogar con proveedores calificados, mediante una plataforma digital accesible, organizada y transparente que utiliza un modelo de tarifa fija por categoría de servicio.
 
-Proyecto enfocado en la prestación de servicios del hogar de manera fácil y aceesible.
+## 👥 Integrantes
 
-👥 Integrantes
+- Laura Valentina Bojacá Sánchez – 1202561
+- Sebastián Gómez Ramírez – 1202821
+- Juan José Gutiérrez – 1202
+- Sebastián Torres – 1202
 
-Laura Valentina Bojacá Sánchez – 1202561
-Sebastián Gómez Ramírez – 1202821
-Juan José Gutiérrez-1202
-Sebastián Torres -1202
+## 🎯 1. Objetivo general
 
-🎯 1. Objetivo General
+Desarrollar una plataforma digital que facilite la contratación de servicios para el hogar, como plomería, electricidad, jardinería y aseo general, conectando a clientes con proveedores calificados mediante un sistema de tarifas fijas por categoría. HogarFix busca solucionar los problemas de informalidad, falta de transparencia en los precios, incertidumbre sobre la disponibilidad de los proveedores y dificultades para encontrar personal de confianza. Para ello, permite consultar los precios antes de realizar una solicitud, programar los servicios, gestionar su aceptación y seguimiento, recibir notificaciones y calificar a los proveedores, mejorando así la confianza, la organización y la eficiencia durante el proceso de contratación.
 
-Escribir un solo párrafo donde expliquen:
-Qué quieren lograr con el sistema.
-Qué problema buscan solucionar.
+## 🌍 2. Contexto de uso
 
-🌍 2. Contexto de Uso
+HogarFix está dirigido a dos tipos principales de usuarios: los clientes que necesitan contratar servicios de reparación o mantenimiento para su hogar y los proveedores que ofrecen servicios técnicos u operativos, como plomería, electricidad, jardinería y aseo general.
 
-¿Quién va a usar el sistema?
-¿Cómo se va a utilizar el sistema?
+Los clientes pueden utilizar la plataforma desde un dispositivo web o móvil para registrarse, consultar las categorías disponibles y sus tarifas fijas, solicitar un servicio indicando la fecha, hora, ubicación y descripción del trabajo, consultar los proveedores que aceptaron la solicitud, confirmar el servicio y calificar la atención recibida. Por su parte, los proveedores pueden gestionar su perfil, consultar las solicitudes correspondientes a sus especialidades, aceptarlas o rechazarlas, administrar sus servicios y consultar su historial e ingresos. Ambos usuarios pueden recibir notificaciones y acceder al módulo de soporte cuando necesiten ayuda.
 
-📋 3. Requerimientos del Sistema
-3.1 Requerimientos Funcionales
+## 📋 3. Requerimientos del sistema
 
-Escriban lo que el sistema debe hacer.
+### 3.1 Requerimientos funcionales
 
-Ejemplo:
-RF01: El sistema debe permitir registrar usuarios.
+**RF01. Registro de usuarios:** El sistema debe permitir registrar usuarios con sus datos personales y seleccionar el tipo de cuenta: cliente o proveedor.
 
-3.2 Requerimientos No Funcionales
+**RF02. Inicio de sesión:** El sistema debe permitir iniciar sesión mediante correo electrónico o número celular y contraseña.
 
-Escriban cómo debe comportarse el sistema.
+**RF03. Recuperación de contraseña:** El sistema debe permitir recuperar la contraseña mediante un código de verificación enviado al correo registrado.
 
-Ejemplo:
-RNF01: La página debe ser responsive.
+**RF04. Consulta de categorías y tarifas:** El sistema debe mostrar las categorías de servicios para el hogar y sus respectivas tarifas fijas.
 
-🧠 4. Diagramas UML
+**RF05. Solicitud de servicios:** El sistema debe permitir al cliente solicitar un servicio indicando la categoría, fecha, hora, ubicación y descripción del trabajo requerido.
 
-Diagrama de Casos de Uso
+**RF06. Visualización de proveedores:** El sistema debe permitir al cliente consultar los proveedores que aceptaron su solicitud y sus calificaciones promedio.
 
-Explicar brevemente qué muestra el diagrama.
+**RF07. Confirmación del servicio:** El sistema debe permitir al cliente confirmar un servicio aceptado por un proveedor y generar un resumen tipo factura con los datos de la contratación.
 
-Diagrama de Secuencia
+**RF08. Gestión de solicitudes:** El sistema debe permitir al proveedor consultar las solicitudes de sus categorías de servicio y aceptarlas o rechazarlas sin modificar la tarifa fija.
 
-Explicar qué proceso representa.
+**RF09. Historial de servicios:** El sistema debe permitir a clientes y proveedores consultar el historial y el estado de los servicios.
 
-🎨 5. URL del Prototipo
+**RF10. Calificación del proveedor:** El sistema debe permitir al cliente calificar al proveedor de una a cinco estrellas y dejar un comentario una vez finalizado el servicio.
 
-Colocar aquí el enlace público de Figma:
+**RF11. Notificaciones:** El sistema debe notificar a los usuarios sobre los cambios de estado de las solicitudes y los recordatorios de los servicios programados.
 
-https://figma.com/xxxxx
+**RF12. Soporte:** El sistema debe ofrecer preguntas frecuentes y permitir enviar mensajes al equipo de soporte.
 
+**RF13. Gestión del perfil:** El sistema debe permitir a los usuarios consultar y editar su información personal y, en el caso del proveedor, gestionar sus categorías y disponibilidad.
+
+**RF14. Consulta de ingresos:** El sistema debe permitir al proveedor consultar sus ingresos acumulados y su desglose por periodo a partir de los servicios pagados.
+
+### 3.2 Requerimientos no funcionales
+
+**RNF01. Usabilidad:** La interfaz debe ser intuitiva y facilitar la navegación de clientes y proveedores.
+
+**RNF02. Diseño adaptable:** La plataforma debe presentar una interfaz responsive que se adapte a diferentes tamaños de pantalla y dispositivos.
+
+**RNF03. Seguridad:** El sistema debe proteger la información de los usuarios mediante autenticación y reglas de acceso según el rol y los permisos correspondientes.
+
+**RNF04. Integridad de tarifas:** Las tarifas deben mantenerse fijas según la categoría del servicio y no deben poder ser modificadas por el cliente ni por el proveedor durante la solicitud.
+
+**RNF05. Sincronización:** La información de las solicitudes, asignaciones, servicios y notificaciones debe mantenerse sincronizada en tiempo real mediante Firebase.
+
+**RNF06. Persistencia:** Los datos registrados deben almacenarse de forma persistente en la base de datos para permitir su consulta posterior.
+
+**RNF07. Organización modular:** El sistema debe separar las funcionalidades de autenticación, gestión del cliente, gestión del proveedor, servicios, notificaciones y soporte para facilitar su mantenimiento y evolución.
+
+## 🧠 4. Diagramas UML
+
+### 4.1 Diagrama de casos de uso
+
+El diagrama de casos de uso representa las principales funcionalidades de HogarFix y la interacción de sus actores con el sistema. Identifica al cliente, quien puede registrarse, iniciar sesión, consultar tarifas, solicitar y confirmar servicios, consultar su historial y calificar a los proveedores; al proveedor, quien puede gestionar su perfil, revisar solicitudes, aceptarlas o rechazarlas y consultar sus servicios e ingresos; y al sistema, que participa en el envío automático de notificaciones.
+
+### 4.2 Diagrama de secuencia
+
+El diagrama de secuencia representa el orden en que interactúan los usuarios y los componentes del sistema durante un proceso específico. Para HogarFix, se propone representar el proceso de solicitud de un servicio a tarifa fija: el cliente consulta las categorías y sus precios, selecciona un servicio, completa y envía la solicitud, el sistema almacena la información en Firebase Firestore y notifica a los proveedores de la categoría correspondiente. Posteriormente, el proveedor acepta o rechaza la solicitud y el sistema actualiza su estado y notifica al cliente.
+
+## 🎨 5. URL del prototipo
+
+**Enlace público de Figma:**
+
+[Agregar aquí el enlace público del prototipo de HogarFix en Figma](https://www.figma.com/design/QyHoaWKuAh0UaloG1XTRh8/HogarFix?node-id=532-421&t=BvIlGCNIAR99rQAw-1)
 
 🗄️ 6. Diseño de Base de Datos
 
