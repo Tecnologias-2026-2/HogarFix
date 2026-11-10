@@ -7,7 +7,7 @@
   <title>Buscar profesionales | HogarFix</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="stylesheet" href="css/styles.css">
-  <script src="js/main.js" defer></script>
+  <script src="js/main.js" type="module"></script>
 </head>
 <body class="search-page">
   <a class="skip-link" href="#search-results">Saltar a los resultados</a>
@@ -53,7 +53,7 @@
         <button class="filter-chip" type="button" data-filter="Jardinería" aria-pressed="false"><span aria-hidden="true">🌿</span> Jardinería</button>
         <button class="filter-chip" type="button" data-filter="Electricidad" aria-pressed="false"><span aria-hidden="true">⚡</span> Electricidad</button>
         <button class="filter-chip" type="button" data-filter="Aseo general" aria-pressed="false"><span aria-hidden="true">🧹</span> Aseo general</button>
-        <label class="available-filter"><input id="available-only" type="checkbox"> <span>Solo disponibles</span></label>
+        <label class="available-filter"><input id="available-only" name="availableOnly" type="checkbox"> <span>Solo disponibles</span></label>
       </div>
 
       <div class="results-heading"><h1>Profesionales cerca de ti</h1><span id="result-count" aria-live="polite">(8 resultados)</span></div>

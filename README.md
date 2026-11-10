@@ -121,3 +121,22 @@ Abre la carpeta clonada en Visual Studio Code y ejecuta `index.html` con la exte
 ## Estado de persistencia de la versión actual
 
 Las solicitudes, sus estados y los mensajes se guardan en `localStorage` del navegador. Permanecen al navegar y recargar en el mismo navegador y sitio, pero no se comparten entre navegadores o dispositivos. La autenticación de esta versión también es una demostración local; no uses contraseñas reales. Para sincronización entre usuarios y dispositivos, hace falta configurar Firebase Authentication y Firestore con reglas de acceso por usuario/rol.
+
+## Esquemas y componentes de formularios
+
+Los módulos de formulario viven en `js/components/` y se cargan desde `js/main.js`. Capturan y validan valores contra `data/schema.json`; los datos se muestran en consola (las contraseñas se validan pero se ocultan en el log). No se conecta Firebase ni ningún backend.
+
+Entidades definidas a partir de los campos actuales:
+
+- `usuarios`: `firstName`, `lastName`, `email`, `password`, `confirmPassword`, `terms`.
+- `sesiones`: `email`, `password`.
+- `busquedas`: `q`, `availableOnly`.
+- `solicitudes`: `service`, `date`, `time`, `address`, `detail`.
+- `proveedores`: `name`, `bio`, `phone`, `zone`, `rate`, `availability`, `services`.
+- `mensajes`: `message`.
+
+Hay módulos para registro, inicio de sesión, búsqueda, reserva, edición de perfil de proveedor y chat de cliente/proveedor. `js/services/api.js` ofrece operaciones CRUD simuladas en memoria con ejemplos de `data/data.js`; la URL futura está centralizada en `js/config.js`. Para cargar módulos ES y `schema.json`, ejecuta el sitio con Live Server o un servidor estático.
+
+### Pendiente de confirmar con Figma
+
+No se pudo inspeccionar el nodo compartido de Figma desde esta sesión porque su visor requiere WebGL. Confirmar si existen pantallas o campos adicionales, especialmente recuperación de contraseña, calificación, soporte, disponibilidad/categorías del proveedor y confirmación de servicio. El rol de usuario hoy se obtiene del parámetro `tipo` y la reserva identifica al proveedor por la pantalla visitada; ninguno aparece como campo en los formularios actuales, por eso no se agregó al esquema.

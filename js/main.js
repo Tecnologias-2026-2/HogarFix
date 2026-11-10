@@ -1,3 +1,10 @@
+import "./components/login.js";
+import "./components/registro.js";
+import "./components/reserva.js";
+import "./components/buscar.js";
+import "./components/perfil-proveedor.js";
+import "./components/chat.js";
+
 const menuButton = document.querySelector(".menu-toggle");
 const navigation = document.querySelector("#primary-nav, #client-nav, #provider-nav");
 

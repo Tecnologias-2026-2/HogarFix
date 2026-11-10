@@ -1,0 +1,49 @@
+{
+  "usuarios": {
+    "fields": {
+      "firstName": { "type": "string", "required": true, "example": "Laura" },
+      "lastName": { "type": "string", "required": true, "example": "Bojacá" },
+      "email": { "type": "string", "required": true, "example": "laura@example.com" },
+      "password": { "type": "string", "required": true, "example": "********" },
+      "confirmPassword": { "type": "string", "required": true, "example": "********" },
+      "terms": { "type": "boolean", "required": true, "example": true }
+    }
+  },
+  "sesiones": {
+    "fields": {
+      "email": { "type": "string", "required": true, "example": "laura@example.com" },
+      "password": { "type": "string", "required": true, "example": "********" }
+    }
+  },
+  "busquedas": {
+    "fields": {
+      "q": { "type": "string", "required": false, "example": "Electricidad" },
+      "availableOnly": { "type": "boolean", "required": false, "example": true }
+    }
+  },
+  "solicitudes": {
+    "fields": {
+      "service": { "type": "string", "required": true, "example": "Electricidad" },
+      "date": { "type": "string", "required": true, "example": "2026-11-12" },
+      "time": { "type": "string", "required": true, "example": "10:00 a. m." },
+      "address": { "type": "string", "required": true, "example": "Calle 45 #28-10" },
+      "detail": { "type": "string", "required": true, "example": "Revisión de una luminaria" }
+    }
+  },
+  "proveedores": {
+    "fields": {
+      "name": { "type": "string", "required": true, "example": "Sebastián Torres" },
+      "bio": { "type": "string", "required": false, "example": "Más de 5 años de experiencia" },
+      "phone": { "type": "string", "required": false, "example": "+57 300 123 45 67" },
+      "zone": { "type": "string", "required": false, "example": "Bogotá, Colombia" },
+      "rate": { "type": "number", "required": false, "example": 95000 },
+      "availability": { "type": "string", "required": false, "example": "Lun - Sáb, 8:00 am - 6:00 pm" },
+      "services": { "type": "array", "required": false, "example": ["Plomería", "Electricidad"] }
+    }
+  },
+  "mensajes": {
+    "fields": {
+      "message": { "type": "string", "required": true, "example": "Confirmo la visita para las 10:00 a. m." }
+    }
+  }
+}
