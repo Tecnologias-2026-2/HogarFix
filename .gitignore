@@ -1,3 +1,17 @@
 .env
 .env.*
 !.env.example
+
+# Dependencias y archivos del sistema
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Configuración local del editor
+.vscode/
+
+Claude outputs/
+
+Claude outputs/
+
+Claude outputs/
