@@ -9,3 +9,5 @@ Thumbs.db
 
 # Configuración local del editor
 .vscode/
+
+Claude outputs/
