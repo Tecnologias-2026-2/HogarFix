@@ -3,6 +3,20 @@
 
 Proyecto enfocado en conectar a personas que necesitan servicios para el hogar con proveedores calificados, mediante una plataforma digital accesible, organizada y transparente que utiliza un modelo de tarifa fija por categoría de servicio.
 
+## 📑 Contenido
+
+1. [Objetivo general](#-1-objetivo-general)
+2. [Contexto de uso](#-2-contexto-de-uso)
+3. [Requerimientos del sistema](#-3-requerimientos-del-sistema)
+4. [Diagramas UML](#-4-diagramas-uml)
+5. [Prototipo en Figma](#-5-prototipo-en-figma)
+6. [Modelo de datos](#%EF%B8%8F-6-modelo-de-datos)
+7. [Documentación del sistema](#-7-documentación-del-sistema)
+8. [Instalación y ejecución](#-8-instalación-y-ejecución)
+9. [Despliegue](#-9-despliegue)
+10. [Seguridad y archivos sensibles](#-10-seguridad-y-archivos-sensibles)
+11. [Estado del proyecto](#-11-estado-del-proyecto)
+
 ## 👥 Integrantes
 
 - Laura Valentina Bojacá Sánchez – 1202561
@@ -72,71 +86,340 @@ Los clientes pueden utilizar la plataforma desde un dispositivo web o móvil par
 
 ### 4.1 Diagrama de casos de uso
 
-El diagrama de casos de uso representa las principales funcionalidades de HogarFix y la interacción de sus actores con el sistema. Identifica al cliente, quien puede registrarse, iniciar sesión, consultar tarifas, solicitar y confirmar servicios, consultar su historial y calificar a los proveedores; al proveedor, quien puede gestionar su perfil, revisar solicitudes, aceptarlas o rechazarlas y consultar sus servicios e ingresos; y al sistema, que participa en el envío automático de notificaciones.
+Representa las funcionalidades principales de HogarFix y cómo interactúan con ellas el cliente, el proveedor y el sistema (que envía las notificaciones automáticas).
 
-### 4.2 Diagrama de secuencia
+```mermaid
+flowchart LR
+  Cliente((Cliente))
+  Proveedor((Proveedor))
+  Sistema((Sistema))
 
-El diagrama de secuencia representa el orden en que interactúan los usuarios y los componentes del sistema durante un proceso específico. Para HogarFix, se propone representar el proceso de solicitud de un servicio a tarifa fija: el cliente consulta las categorías y sus precios, selecciona un servicio, completa y envía la solicitud, el sistema almacena la información en Firebase Firestore y notifica a los proveedores de la categoría correspondiente. Posteriormente, el proveedor acepta o rechaza la solicitud y el sistema actualiza su estado y notifica al cliente.
+  subgraph HogarFix
+    UC1([Registrarse / iniciar sesión])
+    UC2([Consultar categorías y tarifas])
+    UC3([Buscar y ver proveedores])
+    UC4([Solicitar servicio])
+    UC5([Confirmar servicio y ver resumen])
+    UC6([Consultar historial])
+    UC7([Calificar proveedor])
+    UC8([Gestionar perfil y disponibilidad])
+    UC9([Aceptar o rechazar solicitudes])
+    UC10([Actualizar estado del servicio])
+    UC11([Consultar ingresos])
+    UC12([Enviar notificaciones])
+    UC13([Chat y soporte])
+  end
 
-## 🎨 5. URL del prototipo
+  Cliente --- UC1 & UC2 & UC3 & UC4 & UC5 & UC6 & UC7 & UC13
+  Proveedor --- UC1 & UC8 & UC9 & UC10 & UC11 & UC6 & UC13
+  Sistema --- UC12
+```
 
-**Enlace público de Figma:**
+### 4.2 Diagrama de secuencia: solicitud de un servicio a tarifa fija
 
-[Agregar aquí el enlace público del prototipo de HogarFix en Figma](https://www.figma.com/design/QyHoaWKuAh0UaloG1XTRh8/HogarFix?node-id=532-421&t=BvIlGCNIAR99rQAw-1)
+```mermaid
+sequenceDiagram
+  actor C as Cliente
+  participant F as Frontend
+  participant B as Backend (Express)
+  participant DB as Firestore
+  actor P as Proveedor
 
-🗄️ 6. Diseño de Base de Datos
+  C->>F: Abre "Buscar" y elige categoría
+  F->>B: GET /categorias
+  B->>DB: Leer categorías y tarifas
+  DB-->>B: Categorías
+  B-->>F: Categorías con tarifa fija
+  C->>F: Elige proveedor y llena el formulario
+  F->>F: Valida campos obligatorios
+  F->>B: POST /solicitudes (sin precio)
+  B->>DB: Guardar solicitud con la tarifa de la categoría
+  B-->>F: Solicitud creada (estado Pendiente)
+  B-->>P: Notificación de nueva solicitud
+  P->>B: Acepta la solicitud
+  B->>DB: Estado = Aceptada
+  B-->>C: Notificación "solicitud aceptada"
+  C->>F: Confirma la contratación
+  F->>B: PATCH /solicitudes/:id/confirmar
+  B->>DB: Estado = Confirmada
+  B-->>F: Resumen de contratación
+```
 
-Agregar imagen del modelo.
-Tablas principales
+### 4.3 Estados de una solicitud
 
-🧩 7. Documentación del Sistema
-Estructura de Carpetas
-/css
-/assets
+```mermaid
+stateDiagram-v2
+  [*] --> Pendiente: el cliente envía la solicitud
+  Pendiente --> Aceptada: el proveedor acepta
+  Pendiente --> Rechazada: el proveedor rechaza
+  Aceptada --> Confirmada: el cliente confirma
+  Aceptada --> Cancelada: el cliente cancela
+  Confirmada --> EnProceso: el proveedor inicia
+  EnProceso --> Completada: el proveedor termina
+  Completada --> [*]
+  Rechazada --> [*]
+  Cancelada --> [*]
+```
 
-Explicar brevemente qué contiene cada carpeta.
+## 🎨 5. Prototipo en Figma
 
-🚀 8. Instalación y Ejecución
+[Prototipo público de HogarFix en Figma](https://www.figma.com/design/QyHoaWKuAh0UaloG1XTRh8/HogarFix?node-id=532-421&t=BvIlGCNIAR99rQAw-1)
 
-Explicar cómo correr el proyecto.
-# Acceso de demostración
+## 🗄️ 6. Modelo de datos
 
-El registro y el inicio de sesión permiten recorrer el prototipo y entrar a `app.html`. Las cuentas de demostración se guardan en el almacenamiento local del navegador; no existe conexión a una base de datos ni un servidor de autenticación. Por eso una cuenta solo funciona en el mismo navegador y dispositivo donde se creó. No usar contraseñas reales.
+Modelo de las colecciones de Firestore que usa el frontend. Los nombres de campo coinciden con `data/schema.json` y con los datos de demostración de `data/data.js`.
 
-## Pantallas implementadas de WEB FINAL
+```mermaid
+erDiagram
+  USUARIO ||--o| PROVEEDOR : "puede ser"
+  USUARIO ||--o{ SOLICITUD : "crea (cliente)"
+  PROVEEDOR ||--o{ SOLICITUD : "atiende"
+  CATEGORIA ||--o{ SOLICITUD : "define la tarifa de"
+  PROVEEDOR }o--o{ CATEGORIA : "ofrece"
+  SOLICITUD ||--o| CALIFICACION : "recibe"
+  SOLICITUD ||--o{ MENSAJE : "tiene"
+  USUARIO ||--o{ NOTIFICACION : "recibe"
 
-La navegación estática cubre los recorridos de cliente y proveedor del prototipo:
+  USUARIO {
+    string uid PK
+    string firstName
+    string lastName
+    string email
+    string telefono
+    string rol "Cliente | Proveedor"
+  }
+  PROVEEDOR {
+    string id PK
+    string uid FK
+    string profession
+    string[] categorias
+    number rating
+    number jobs
+    boolean available
+    string zone
+    string availability
+    string bio
+  }
+  CATEGORIA {
+    string id PK
+    string nombre
+    string descripcion
+    number tarifa "fija, solo la cambia un administrador"
+  }
+  SOLICITUD {
+    string id PK
+    string ownerEmail FK "cliente"
+    string providerId FK
+    string categoriaId FK
+    string date
+    string time
+    string address
+    string detail
+    number amount "copiada de la categoría"
+    string status
+    timestamp createdAt
+    timestamp confirmedAt
+  }
+  CALIFICACION {
+    string id PK
+    string solicitudId FK
+    number estrellas "1 a 5"
+    string comentario
+  }
+  MENSAJE {
+    string id PK
+    string solicitudId FK
+    string sender
+    string text
+    timestamp createdAt
+  }
+  NOTIFICACION {
+    string id PK
+    string uid FK
+    string tipo
+    string texto
+    boolean leida
+  }
+```
 
-- **Acceso público:** `index.html`, `registro.html` y `login.html`.
-- **Cliente:** `app.html` (inicio), `buscar.html`, `perfil-proveedor.html`, `reserva.html` (confirmación), `solicitudes.html` y `chat.html`.
-- **Proveedor:** `inicio-proveedor.html`, `solicitudes-proveedor.html`, `detalle-proveedor.html`, `mi-perfil-proveedor.html`, `ingresos-proveedor.html` y `mensajes-proveedor.html`.
-- Los ocho profesionales del prototipo se muestran mediante perfiles y conversaciones parametrizados; los estados de solicitudes se manejan desde las acciones de aceptar, rechazar, iniciar y completar.
+**Tarifas fijas actuales**
 
-Estas pantallas son una demostración de front-end para GitHub Pages. Registro, sesión, perfil, mensajes y solicitudes se guardan únicamente en el almacenamiento local del navegador; no se conectan a Firebase ni a un servicio de autenticación. Usa datos de prueba, no contraseñas reales.
+| Categoría | ID | Tarifa |
+| --- | --- | --- |
+| Plomería | `plomeria` | $35.000 |
+| Electricidad | `electricidad` | $40.000 |
+| Jardinería | `jardineria` | $40.000 |
+| Aseo general | `aseo-general` | $35.000 |
 
-### Ejecutar localmente
+## 🧩 7. Documentación del sistema
 
-Abre la carpeta clonada en Visual Studio Code y ejecuta `index.html` con la extensión Live Server, o publica la rama `main` desde la raíz del repositorio con GitHub Pages.
+### 7.1 Tecnologías
 
-## Estado de persistencia de la versión actual
+| Capa | Tecnología |
+| --- | --- |
+| Frontend | HTML5, CSS3 (diseño responsive con media queries), JavaScript (módulos ES) |
+| Backend | Node.js + Express (en desarrollo) |
+| Base de datos y autenticación | Firebase Firestore y Firebase Authentication (en desarrollo) |
+| Diseño | Figma |
+| Control de versiones y publicación | Git, GitHub y GitHub Pages |
+| Formato de código | Prettier (`.prettierrc.json`) |
 
-Las solicitudes, sus estados y los mensajes se guardan en `localStorage` del navegador. Permanecen al navegar y recargar en el mismo navegador y sitio, pero no se comparten entre navegadores o dispositivos. La autenticación de esta versión también es una demostración local; no uses contraseñas reales. Para sincronización entre usuarios y dispositivos, hace falta configurar Firebase Authentication y Firestore con reglas de acceso por usuario/rol.
+### 7.2 Arquitectura
 
-## Esquemas y componentes de formularios
+```mermaid
+flowchart LR
+  subgraph Navegador
+    HTML[Pantallas HTML] --> C[js/components/*]
+    C --> API[js/services/api.js]
+  end
+  API -- "API_BASE_URL vacía" --> DEMO[(data/data.js + localStorage)]
+  API -- "API_BASE_URL definida" --> EXP[Backend Express]
+  EXP --> FS[(Firestore)]
+  EXP --> AUTH[Firebase Auth]
+```
 
-Los módulos de formulario viven en `js/components/` y se cargan desde `js/main.js`. Capturan y validan valores contra `data/schema.json`; los datos se muestran en consola (las contraseñas se validan pero se ocultan en el log). No se conecta Firebase ni ningún backend.
+- **Frontend:** cada pantalla es un archivo HTML que carga `js/main.js`. `main.js` importa los módulos de `js/components/`, y cada módulo actúa solo si encuentra sus elementos en la página.
+- **Capa de servicios (`js/services/api.js`):** es el único punto por donde el frontend pide o envía datos. Si `js/config.js` no tiene URL de backend, funciona en **modo demostración** con `data/data.js` y `localStorage`. Cuando el backend esté publicado, basta con poner su URL en `API_BASE_URL`; las pantallas no cambian.
+- **Backend:** API REST en Express que valida los datos, aplica las reglas de negocio (por ejemplo, que la tarifa venga de la categoría) y se comunica con Firestore.
+- **Base de datos:** Firestore guarda usuarios, proveedores, categorías, solicitudes, calificaciones, mensajes y notificaciones (ver sección 6).
 
-Entidades definidas a partir de los campos actuales:
+### 7.3 Estructura de carpetas
 
-- `usuarios`: `firstName`, `lastName`, `email`, `password`, `confirmPassword`, `terms`.
-- `sesiones`: `email`, `password`.
-- `busquedas`: `q`, `availableOnly`.
-- `solicitudes`: `service`, `date`, `time`, `address`, `detail`.
-- `proveedores`: `name`, `bio`, `phone`, `zone`, `rate`, `availability`, `services`.
-- `mensajes`: `message`.
+```
+HogarFix/
+├── index.html                 Página pública (landing)
+├── login.html, registro.html  Acceso
+├── app.html                   Panel del cliente
+├── buscar.html                Catálogo de categorías y búsqueda de proveedores
+├── perfil-proveedor.html      Perfil del proveedor y formulario de solicitud
+├── reserva.html               Resumen de contratación y confirmación
+├── solicitudes.html           Historial de servicios del cliente
+├── chat.html                  Chat del cliente
+├── inicio-proveedor.html      Panel del proveedor
+├── solicitudes-proveedor.html Solicitudes recibidas por el proveedor
+├── detalle-proveedor.html     Detalle de una solicitud (proveedor)
+├── mi-perfil-proveedor.html   Perfil editable del proveedor
+├── ingresos-proveedor.html    Ingresos del proveedor
+├── mensajes-proveedor.html    Chat del proveedor
+├── assets/                    Logos, íconos SVG e imágenes
+├── css/styles.css             Estilos globales y media queries
+├── data/
+│   ├── data.js                Datos de demostración (categorías, proveedores, reseñas…)
+│   └── schema.json            Esquema de los formularios y entidades
+├── js/
+│   ├── config.js              URL del backend (vacía = modo demostración)
+│   ├── main.js                Navegación, accesibilidad, sesión y pantallas del proveedor
+│   ├── utils.js               Formato de precios y fechas, estados de carga y error
+│   ├── services/api.js        Capa de servicios (backend o demostración)
+│   └── components/
+│       ├── catalogo.js        Categorías y tarifas fijas (ISSUE 10)
+│       ├── proveedores.js     Listado y perfil de proveedores (ISSUE 12)
+│       ├── solicitud.js       Formulario de solicitud con validación (ISSUE 11)
+│       ├── resumen.js         Resumen y confirmación de contratación (ISSUE 13)
+│       ├── historial.js       Historial con filtros por estado y fecha (ISSUE 14)
+│       ├── form-data.js       Lectura y validación de formularios contra schema.json
+│       └── login.js, registro.js, buscar.js, chat.js, perfil-proveedor.js
+├── .github/workflows/pages.yml  Publicación automática en GitHub Pages
+├── .env.example               Variables de entorno de ejemplo
+└── .prettierrc.json           Formato común del código
+```
 
-Hay módulos para registro, inicio de sesión, búsqueda, reserva, edición de perfil de proveedor y chat de cliente/proveedor. `js/services/api.js` ofrece operaciones CRUD simuladas en memoria con ejemplos de `data/data.js`; la URL futura está centralizada en `js/config.js`. Para cargar módulos ES y `schema.json`, ejecuta el sitio con Live Server o un servidor estático.
+### 7.4 Endpoints principales
 
-### Pendiente de confirmar con Figma
+Contrato que consume el frontend desde `js/services/api.js`. Todas las rutas cuelgan de `API_BASE_URL` y responden JSON. Las rutas de solicitudes requieren el encabezado `Authorization: Bearer <token>` del usuario autenticado.
 
-No se pudo inspeccionar el nodo compartido de Figma desde esta sesión porque su visor requiere WebGL. Confirmar si existen pantallas o campos adicionales, especialmente recuperación de contraseña, calificación, soporte, disponibilidad/categorías del proveedor y confirmación de servicio. El rol de usuario hoy se obtiene del parámetro `tipo` y la reserva identifica al proveedor por la pantalla visitada; ninguno aparece como campo en los formularios actuales, por eso no se agregó al esquema.
+| Método | Ruta | Uso | Respuesta |
+| --- | --- | --- | --- |
+| GET | `/categorias` | Catálogo de categorías y tarifas fijas | `[{ id, nombre, descripcion, tarifa }]` |
+| GET | `/proveedores?categoria=&disponible=` | Proveedores, con filtros opcionales | `[{ id, name, profession, categorias, rating, available, … }]` |
+| GET | `/proveedores/:id` | Perfil del proveedor con sus reseñas | `{ …proveedor, resenas: [] }` |
+| GET | `/solicitudes` | Solicitudes del cliente autenticado | `[{ id, service, provider, date, time, status, amount, … }]` |
+| GET | `/solicitudes/:id` | Detalle de una solicitud | `{ …solicitud }` |
+| POST | `/solicitudes` | Crear solicitud `{ proveedorId, categoriaId, date, time, address, detail }` | Solicitud creada, estado `Pendiente` |
+| PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud `Aceptada` | Solicitud con estado `Confirmada` |
+
+Reglas importantes para el backend:
+
+- `POST /solicitudes` **no recibe precio**: el servidor copia la tarifa de la categoría (RNF04).
+- Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
+- Pendientes del equipo de backend: autenticación, recuperación de contraseña, gestión de solicitudes del proveedor, calificaciones, notificaciones e ingresos.
+
+### 7.5 Funcionalidades del frontend
+
+- **Catálogo y tarifas:** `buscar.html` muestra las cuatro categorías con su tarifa fija; al elegir una se filtran los proveedores. La landing toma los mismos precios.
+- **Proveedores:** tarjetas con especialidad, calificación, distancia y disponibilidad; filtros por texto, categoría y disponibilidad; perfil con reseñas.
+- **Solicitud de servicio:** formulario con categoría, fecha (desde hoy y hasta 60 días), hora, dirección y descripción; validación por campo con mensajes; la tarifa se muestra y no se puede editar.
+- **Resumen de contratación:** datos del cliente, del proveedor, del servicio y la tarifa, tipo factura, con opción de imprimir. Si el proveedor ya aceptó, el cliente confirma desde ahí.
+- **Historial:** filtros por estado y rango de fechas, orden, detalles desplegables y actualización automática (cada 30 s, al volver a la pestaña o cuando cambia en otra pestaña).
+- **Estados de carga y error** en todas las consultas, con botón para reintentar.
+- **Diseño responsive** probado a 360 px (celular), 768 px (tablet) y 1280 px (escritorio), sin desbordamiento horizontal.
+- **Accesibilidad:** enlace para saltar al contenido, botones para aumentar el texto y alto contraste, etiquetas ARIA y navegación por teclado.
+
+## 🚀 8. Instalación y ejecución
+
+**Requisitos:** un navegador actualizado y Visual Studio Code con la extensión **Live Server** (o cualquier servidor estático). No hace falta instalar dependencias.
+
+1. Clona el repositorio:
+   ```bash
+   git clone https://github.com/Tecnologias-2026-2/HogarFix.git
+   cd HogarFix
+   ```
+2. Abre la carpeta en Visual Studio Code.
+3. Clic derecho en `index.html` → **Open with Live Server**. Se abre en `http://127.0.0.1:5500`.
+
+> Abrir el HTML con doble clic (`file://`) no funciona: los módulos de JavaScript y `schema.json` necesitan un servidor.
+
+Alternativa sin VS Code: `npx serve .` o `python -m http.server 5500` desde la carpeta del proyecto.
+
+### Recorrido de demostración
+
+1. En `index.html` elige **Soy Cliente**, regístrate con datos de prueba (no uses contraseñas reales).
+2. En **Buscar** elige una categoría, abre un perfil y envía una solicitud.
+3. Revisa el resumen y luego **Mis solicitudes**.
+4. Para ver el flujo del proveedor, cierra sesión y regístrate como proveedor con el **mismo nombre** del profesional elegido (por ejemplo, Ana Torres). En **Mis solicitudes** podrás aceptarla.
+5. Vuelve a entrar como cliente: la solicitud aparece *Por confirmar* y puedes confirmar la contratación.
+6. Para mostrar los estados de error, agrega `?simularError=1` a la URL (por ejemplo `buscar.html?simularError=1`).
+
+### Conectar el backend
+
+Cuando el backend esté disponible, edita `js/config.js`:
+
+```js
+export const API_BASE_URL = "http://localhost:3000/api"; // o la URL publicada
+```
+
+### Modo demostración
+
+Mientras `API_BASE_URL` esté vacía, las cuentas, la sesión, las solicitudes y los mensajes se guardan en el `localStorage`/`sessionStorage` del navegador. Solo funcionan en el mismo navegador y dispositivo donde se crearon y no se comparten con otros usuarios.
+
+## 🌍 9. Despliegue
+
+El frontend se publica en **GitHub Pages** con el flujo `.github/workflows/pages.yml`, que se ejecuta en cada push a `main` (o a mano desde la pestaña *Actions*).
+
+Configuración inicial (una sola vez, la hace quien administra el repositorio): **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
+
+## 🔒 10. Seguridad y archivos sensibles
+
+- `.gitignore` excluye `.env` y sus variantes; usa `.env.example` como plantilla y nunca subas el `.env` real.
+- Las contraseñas de las cuentas de demostración no se guardan en texto plano: se derivan con PBKDF2 (Web Crypto) antes de guardarlas en el navegador.
+- La configuración web de Firebase (`apiKey`, `projectId`…) es pública por diseño, pero el acceso a los datos debe protegerse con **reglas de seguridad de Firestore** por usuario y rol.
+- Las claves privadas del backend (cuentas de servicio de Firebase) deben ir solo en variables de entorno del servidor, nunca en el repositorio.
+- Lista de revisión antes de cada entrega: sin archivos `.env`, sin credenciales de cuentas de servicio y sin archivos de prueba (`prueba.html`, `prueba-firebase.js`) en `main`.
+
+## 📌 11. Estado del proyecto
+
+| Issue | Tema | Estado |
+| --- | --- | --- |
+| 08 | Adaptación del diseño a HTML, CSS y JS | ✅ Código formateado y organizado, íconos de categorías corregidos |
+| 09 | Diseño responsive | ✅ Probado en celular, tablet y escritorio |
+| 10 | Catálogo de categorías y tarifas | ✅ Desde la capa de servicios |
+| 11 | Formulario de solicitud | ✅ Validación y envío por la capa de servicios |
+| 12 | Visualización de proveedores | ✅ Desde la capa de servicios, con carga y error |
+| 13 | Confirmación y resumen de contratación | ✅ |
+| 14 | Historial de servicios del cliente | ✅ Filtros por estado y fecha |
+| 28 | Documentación y entrega final | ✅ Este README |
+| 02-07, 15-27 | Backend, Firebase, autenticación, calificaciones, notificaciones | En desarrollo por el equipo de backend y base de datos |
+
+Mientras el backend no esté publicado, el frontend funciona completo en modo demostración y queda listo para conectarse cambiando una sola línea en `js/config.js`.
