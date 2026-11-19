@@ -4,7 +4,7 @@ const TYPE_NAMES = {
   boolean: "boolean",
   timestamp: "string",
   array: "array",
-  referencia: "string"
+  referencia: "string",
 };
 
 let schemaPromise;
@@ -34,7 +34,10 @@ export function readForm(form) {
       const checked = [...form.querySelectorAll(`[name="${CSS.escape(field.name)}"]`)]
         .filter((item) => item.type === "checkbox" && item.checked)
         .map((item) => item.value || item.parentElement?.textContent.trim() || item.name);
-      values[field.name] = form.querySelectorAll(`[name="${CSS.escape(field.name)}"]`).length > 1 ? checked : field.checked;
+      values[field.name] =
+        form.querySelectorAll(`[name="${CSS.escape(field.name)}"]`).length > 1
+          ? checked
+          : field.checked;
       return;
     }
     if (field.type === "radio" && !field.checked) return;
@@ -59,7 +62,8 @@ export function validateAgainstSchema(values, schema, entityName) {
 
     const expected = TYPE_NAMES[definition.type];
     const actual = Array.isArray(value) ? "array" : typeof value;
-    if (expected && actual !== expected) errors.push(`Tipo inválido para ${name}: se esperaba ${expected}`);
+    if (expected && actual !== expected)
+      errors.push(`Tipo inválido para ${name}: se esperaba ${expected}`);
   });
 
   return errors;
@@ -76,7 +80,7 @@ export function bindSchemaForm(formId, entityName, options = {}) {
     const values = options.transform ? options.transform(readForm(form), form) : readForm(form);
     const errors = [
       ...validateAgainstSchema(values, schema, entityName),
-      ...(options.validate?.(values) ?? [])
+      ...(options.validate?.(values) ?? []),
     ];
     if (errors.length) {
       console.error(`[${entityName}] Datos inválidos`, errors);
@@ -84,10 +88,12 @@ export function bindSchemaForm(formId, entityName, options = {}) {
       return;
     }
 
-    const visibleValues = Object.fromEntries(Object.entries(values).map(([name, value]) => [
-      name,
-      /password|contraseña/i.test(name) ? "[oculto]" : value
-    ]));
+    const visibleValues = Object.fromEntries(
+      Object.entries(values).map(([name, value]) => [
+        name,
+        /password|contraseña/i.test(name) ? "[oculto]" : value,
+      ]),
+    );
     console.table(visibleValues);
     console.log(`[${entityName}] Datos válidos contra schema.json`, visibleValues);
     options.onValid?.(values);
