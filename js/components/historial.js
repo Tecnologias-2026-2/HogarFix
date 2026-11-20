@@ -43,6 +43,7 @@ function requestCard(item) {
         <dl>
           <div><dt>Dirección</dt><dd>${escapeHTML(item.address)}</dd></div>
           <div><dt>Tarifa fija</dt><dd>${formatCOP(item.amount)}</dd></div>
+          <div><dt>Pago</dt><dd>${escapeHTML(item.paymentMethod ? `${item.paymentMethod.nombre} · ${item.paymentStatus}` : "No indicado")}</dd></div>
           <div><dt>Solicitada</dt><dd>${escapeHTML(formatDateTime(item.createdAt))}</dd></div>
           ${item.confirmedAt ? `<div><dt>Confirmada</dt><dd>${escapeHTML(formatDateTime(item.confirmedAt))}</dd></div>` : ""}
         </dl>

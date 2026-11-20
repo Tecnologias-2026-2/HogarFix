@@ -45,28 +45,33 @@
       <section class="provider-hero">
         <p>Bienvenido de nuevo</p>
         <h1>Hola, <span id="provider-greeting">Sebastian</span> 👋</h1>
-        <p>Panel de proveedor · Bogotá, Colombia</p>
+        <p>Panel de proveedor · <span id="provider-zone">Bogotá, Colombia</span></p>
         <div class="income-highlight">
-          <div><span>Ingresos del mes</span><strong>$65.000</strong></div>
+          <div><span>Ingresos del mes</span><strong id="provider-month-income">$0</strong></div>
           <a class="button button-small" href="ingresos-proveedor.html">Ver detalles</a>
         </div>
       </section>
       <section class="provider-summary-grid">
         <a href="solicitudes-proveedor.html?estado=Pendiente" class="summary-box summary-yellow"
-          ><strong id="provider-pending-count">2</strong><span>Nuevas solicitudes</span></a
-        ><a href="solicitudes-proveedor.html?estado=Aceptada" class="summary-box summary-blue"
-          ><strong>1</strong><span>Aceptadas</span></a
+          ><strong id="provider-pending-count">0</strong><span>Nuevas solicitudes</span></a
+        ><a href="solicitudes-proveedor.html?estado=Confirmada" class="summary-box summary-blue"
+          ><strong id="provider-confirmed-count">0</strong><span>Por iniciar</span></a
         ><a href="solicitudes-proveedor.html?estado=En proceso" class="summary-box summary-purple"
-          ><strong>1</strong><span>En proceso</span></a
+          ><strong id="provider-inprogress-count">0</strong><span>En proceso</span></a
         ><a href="solicitudes-proveedor.html?estado=Completada" class="summary-box summary-green"
-          ><strong>1</strong><span>Completadas</span></a
+          ><strong id="provider-completed-count">0</strong><span>Completadas</span></a
         >
       </section>
       <div class="portal-section-heading">
         <h2>Nuevas solicitudes</h2>
         <a href="solicitudes-proveedor.html?estado=Pendiente">Ver todas</a>
       </div>
-      <section id="provider-dashboard-requests" class="provider-request-list"></section>
+      <div id="provider-profile-tip"></div>
+      <section
+        id="provider-dashboard-requests"
+        class="provider-request-list"
+        aria-live="polite"
+      ></section>
       <div class="portal-section-heading">
         <h2>En proceso</h2>
         <a href="solicitudes-proveedor.html?estado=En proceso">Ver solicitudes</a>

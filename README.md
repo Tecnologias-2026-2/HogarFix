@@ -294,6 +294,7 @@ HogarFix/
 ├── perfil-proveedor.html      Perfil del proveedor y formulario de solicitud
 ├── reserva.html               Resumen de contratación y confirmación
 ├── solicitudes.html           Historial de servicios del cliente
+├── mi-perfil.html             Perfil editable del cliente
 ├── chat.html                  Chat del cliente
 ├── inicio-proveedor.html      Panel del proveedor
 ├── solicitudes-proveedor.html Solicitudes recibidas por el proveedor
@@ -318,7 +319,10 @@ HogarFix/
 │       ├── resumen.js         Resumen y confirmación de contratación (ISSUE 13)
 │       ├── historial.js       Historial con filtros por estado y fecha (ISSUE 14)
 │       ├── form-data.js       Lectura y validación de formularios contra schema.json
-│       └── login.js, registro.js, buscar.js, chat.js, perfil-proveedor.js
+│       ├── panel-proveedor.js Panel y solicitudes del proveedor autenticado (#29)
+│       ├── perfil.js          Perfil editable de cliente y proveedor (#30, #31)
+│       ├── password.js        Mostrar/ocultar y requisitos de contraseña (#32)
+│       └── login.js, registro.js, buscar.js, chat.js
 ├── .github/workflows/pages.yml  Publicación automática en GitHub Pages
 ├── .env.example               Variables de entorno de ejemplo
 └── .prettierrc.json           Formato común del código
@@ -337,10 +341,19 @@ Contrato que consume el frontend desde `js/services/api.js`. Todas las rutas cue
 | GET | `/solicitudes/:id` | Detalle de una solicitud | `{ …solicitud }` |
 | POST | `/solicitudes` | Crear solicitud `{ proveedorId, categoriaId, date, time, address, detail }` | Solicitud creada, estado `Pendiente` |
 | PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud `Aceptada` | Solicitud con estado `Confirmada` |
+| GET | `/pagos/metodos` | Métodos de pago disponibles | `[{ id, nombre, descripcion, tipo }]` |
+| GET | `/proveedor/solicitudes` | Solicitudes del proveedor autenticado | `[{ …solicitud }]` |
+| PATCH | `/solicitudes/:id/estado` | El proveedor cambia el estado `{ estado }` | Solicitud actualizada |
+| GET | `/perfil` | Perfil del usuario autenticado | `{ firstName, lastName, email, role, phone, bio, photo, … }` |
+| PUT | `/perfil` | Guardar cambios del propio perfil | Perfil actualizado |
 
 Reglas importantes para el backend:
 
 - `POST /solicitudes` **no recibe precio**: el servidor copia la tarifa de la categoría (RNF04).
+- `POST /solicitudes` recibe `metodoPagoId` (`efectivo`, `nequi`, `pse` o `tarjeta`) y debe guardar `paymentMethod` y `paymentStatus`. Para coordinar con el backend: la solicitud que espera el frontend tiene `id, ownerEmail, clientName, providerId, providerEmail, categoriaId, service, date, time, address, detail, amount, paymentMethod { id, nombre, tipo }, paymentStatus, status, createdAt`.
+- **Pagos:** el cobro en línea lo hará la pasarela que defina el equipo (con tokenización). HogarFix nunca recibe ni guarda números de tarjeta ni CVV, y no marca pagos como exitosos sin la confirmación real de la pasarela.
+- `GET /proveedor/solicitudes` y `PATCH /solicitudes/:id/estado` deben filtrar por el proveedor autenticado: un proveedor nunca ve ni cambia solicitudes de otro.
+- `PUT /perfil` toma el usuario del token, nunca del cuerpo: cada quien solo edita su propio perfil. Con Firebase, el perfil va en `usuarios/{uid}` y la foto en Firebase Storage (`perfiles/{uid}.jpg`).
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
 - Pendientes del equipo de backend: autenticación, recuperación de contraseña, gestión de solicitudes del proveedor, calificaciones, notificaciones e ingresos.
 
@@ -350,6 +363,10 @@ Reglas importantes para el backend:
 - **Proveedores:** tarjetas con especialidad, calificación, distancia y disponibilidad; filtros por texto, categoría y disponibilidad; perfil con reseñas.
 - **Solicitud de servicio:** formulario con categoría, fecha (desde hoy y hasta 60 días), hora, dirección y descripción; validación por campo con mensajes; la tarifa se muestra y no se puede editar.
 - **Resumen de contratación:** datos del cliente, del proveedor, del servicio y la tarifa, tipo factura, con opción de imprimir. Si el proveedor ya aceptó, el cliente confirma desde ahí.
+- **Métodos de pago:** al solicitar un servicio el cliente elige efectivo, Nequi, PSE o tarjeta; ve un resumen antes de enviar; la elección se conserva si recarga la página y aparece en el resumen de contratación y en el historial.
+- **Perfiles:** el cliente (`mi-perfil.html`) y el proveedor (`mi-perfil-proveedor.html`) editan sus datos y foto. El proveedor elige especialidades, horarios y disponibilidad, y con eso aparece en las búsquedas.
+- **Panel del proveedor:** solo muestra solicitudes reales dirigidas a ese proveedor; un proveedor nuevo ve todo en cero y un mensaje de estado vacío.
+- **Contraseñas:** botón de ojo para mostrar u ocultar, y requisitos (8 caracteres, mayúscula, minúscula, número y carácter especial) que se marcan en vivo; no se puede crear la cuenta hasta cumplirlos y que coincida la confirmación.
 - **Historial:** filtros por estado y rango de fechas, orden, detalles desplegables y actualización automática (cada 30 s, al volver a la pestaña o cuando cambia en otra pestaña).
 - **Estados de carga y error** en todas las consultas, con botón para reintentar.
 - **Diseño responsive** probado a 360 px (celular), 768 px (tablet) y 1280 px (escritorio), sin desbordamiento horizontal.
@@ -376,9 +393,10 @@ Alternativa sin VS Code: `npx serve .` o `python -m http.server 5500` desde la c
 1. En `index.html` elige **Soy Cliente**, regístrate con datos de prueba (no uses contraseñas reales).
 2. En **Buscar** elige una categoría, abre un perfil y envía una solicitud.
 3. Revisa el resumen y luego **Mis solicitudes**.
-4. Para ver el flujo del proveedor, cierra sesión y regístrate como proveedor con el **mismo nombre** del profesional elegido (por ejemplo, Ana Torres). En **Mis solicitudes** podrás aceptarla.
-5. Vuelve a entrar como cliente: la solicitud aparece *Por confirmar* y puedes confirmar la contratación.
-6. Para mostrar los estados de error, agrega `?simularError=1` a la URL (por ejemplo `buscar.html?simularError=1`).
+4. Para ver el flujo completo con un proveedor: regístrate como proveedor, entra a **Mi Perfil**, elige una especialidad y guarda. Desde ese momento apareces en **Buscar**.
+5. Entra como cliente, busca a ese proveedor, elige un método de pago y envía la solicitud. Luego entra como proveedor: la verás en **Mis solicitudes** y podrás aceptarla.
+6. Vuelve a entrar como cliente: la solicitud aparece *Por confirmar* y puedes confirmar la contratación.
+7. Para mostrar los estados de error, agrega `?simularError=1` a la URL (por ejemplo `buscar.html?simularError=1`).
 
 ### Conectar el backend
 
@@ -390,7 +408,7 @@ export const API_BASE_URL = "http://localhost:3000/api"; // o la URL publicada
 
 ### Modo demostración
 
-Mientras `API_BASE_URL` esté vacía, las cuentas, la sesión, las solicitudes y los mensajes se guardan en el `localStorage`/`sessionStorage` del navegador. Solo funcionan en el mismo navegador y dispositivo donde se crearon y no se comparten con otros usuarios.
+Mientras `API_BASE_URL` esté vacía, las cuentas, los perfiles, la sesión, las solicitudes y los mensajes se guardan en el `localStorage`/`sessionStorage` del navegador. Solo funcionan en el mismo navegador y dispositivo donde se crearon y no se comparten con otros usuarios.
 
 ## 🌍 9. Despliegue
 
@@ -403,6 +421,8 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 ## 🔒 10. Seguridad y archivos sensibles
 
 - `.gitignore` excluye `.env` y sus variantes; usa `.env.example` como plantilla y nunca subas el `.env` real.
+- Las contraseñas deben tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.
+- No se piden ni guardan datos de tarjetas: el pago en línea se hará en la pasarela de pagos.
 - Las contraseñas de las cuentas de demostración no se guardan en texto plano: se derivan con PBKDF2 (Web Crypto) antes de guardarlas en el navegador.
 - La configuración web de Firebase (`apiKey`, `projectId`…) es pública por diseño, pero el acceso a los datos debe protegerse con **reglas de seguridad de Firestore** por usuario y rol.
 - Las claves privadas del backend (cuentas de servicio de Firebase) deben ir solo en variables de entorno del servidor, nunca en el repositorio.
@@ -420,6 +440,11 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 | 13 | Confirmación y resumen de contratación | ✅ |
 | 14 | Historial de servicios del cliente | ✅ Filtros por estado y fecha |
 | 28 | Documentación y entrega final | ✅ Este README |
+| #29 (34) | Solicitudes iniciales del panel del proveedor | ✅ Sin datos de prueba, solo las del proveedor autenticado |
+| #30 (35) | Perfil del cliente | ✅ Foto, datos, descripción y método de pago preferido |
+| #31 (36) | Perfil del proveedor | ✅ Foto, contacto, especialidades, horarios y disponibilidad |
+| #32 (37) | Contraseñas en el registro | ✅ Mostrar/ocultar y requisitos en vivo |
+| #32 (38) | Flujo de métodos de pago | ✅ Interfaz lista; falta la pasarela que defina el equipo |
 | 02-07, 15-27 | Backend, Firebase, autenticación, calificaciones, notificaciones | En desarrollo por el equipo de backend y base de datos |
 
 Mientras el backend no esté publicado, el frontend funciona completo en modo demostración y queda listo para conectarse cambiando una sola línea en `js/config.js`.
