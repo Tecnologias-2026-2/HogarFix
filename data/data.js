@@ -41,6 +41,41 @@ export const categorias = [
   },
 ];
 
+// Métodos de pago que se muestran al solicitar un servicio.
+// "en-linea": se pagará en la pasarela que defina el equipo (todavía no integrada).
+// "contra-entrega": el cliente paga directamente al profesional al terminar.
+export const metodosPago = [
+  {
+    id: "efectivo",
+    nombre: "Efectivo",
+    descripcion: "Pagas directamente al profesional cuando termine el servicio.",
+    tipo: "contra-entrega",
+    icono: "💵",
+  },
+  {
+    id: "nequi",
+    nombre: "Nequi",
+    descripcion: "Pago desde tu app Nequi a través de la pasarela de pagos.",
+    tipo: "en-linea",
+    icono: "📱",
+  },
+  {
+    id: "pse",
+    nombre: "PSE",
+    descripcion: "Transferencia desde tu cuenta bancaria a través de la pasarela de pagos.",
+    tipo: "en-linea",
+    icono: "🏦",
+  },
+  {
+    id: "tarjeta",
+    nombre: "Tarjeta de crédito o débito",
+    descripcion:
+      "Los datos de la tarjeta se ingresan solo en la pasarela segura; HogarFix no los guarda.",
+    tipo: "en-linea",
+    icono: "💳",
+  },
+];
+
 export const proveedores = [
   {
     id: "carlos-ramirez",
