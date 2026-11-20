@@ -1,13 +1,15 @@
 import "./components/login.js";
 import "./components/registro.js";
 import "./components/buscar.js";
-import "./components/perfil-proveedor.js";
 import "./components/chat.js";
 import "./components/catalogo.js";
 import "./components/proveedores.js";
 import "./components/solicitud.js";
 import "./components/resumen.js";
 import "./components/historial.js";
+import "./components/panel-proveedor.js";
+import "./components/perfil.js";
+import { passwordIssues } from "./components/password.js";
 
 const menuButton = document.querySelector(".menu-toggle");
 const navigation = document.querySelector("#primary-nav, #client-nav, #provider-nav");
@@ -107,22 +109,16 @@ function getClientThreadKey(
   return `${normalizeKey(owner)}::${normalizeKey(providerName)}`;
 }
 function getProviderName() {
-  const savedProfile = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("hogarfix.provider.profile.v1") || "null");
-    } catch {
-      return null;
-    }
-  })();
   const session = getCurrentSession();
-  return savedProfile?.name || [session?.firstName, session?.lastName].filter(Boolean).join(" ");
+  return [session?.firstName, session?.lastName].filter(Boolean).join(" ");
 }
 function getProviderThreadKey(clientName) {
   const providerName = getProviderName();
+  const session = getCurrentSession();
   const request = readStoredArray(CLIENT_REQUESTS_KEY).find(
     (item) =>
       normalizeKey(item.clientName) === normalizeKey(clientName) &&
-      normalizeKey(item.provider) === normalizeKey(providerName),
+      item.providerEmail === session?.email,
   );
   return getClientThreadKey(
     providerName || "proveedor-demo",
@@ -180,6 +176,12 @@ registerForm?.addEventListener("submit", async (event) => {
   if (!registerForm.reportValidity()) return;
 
   const values = new FormData(registerForm);
+  const issues = passwordIssues(String(values.get("password")));
+  if (issues.length) {
+    registerMessage.textContent = `La contraseña necesita: ${issues.join(", ")}.`;
+    registerForm.elements.password.focus();
+    return;
+  }
   if (values.get("password") !== values.get("confirmPassword")) {
     registerMessage.textContent = "Las contraseñas no coinciden.";
     registerForm.elements.confirmPassword.focus();
@@ -264,17 +266,22 @@ if (appName || appRole) {
   }
   if (!session) window.location.replace("login.html");
   else {
-    if (session.role === "Proveedor" && location.pathname.endsWith("app.html"))
+    // Cada rol solo usa sus propias pantallas.
+    // (Excepción: el proveedor puede ver su perfil público en perfil-proveedor.html.)
+    if (
+      session.role === "Proveedor" &&
+      document.querySelector("#client-nav") &&
+      !location.pathname.endsWith("perfil-proveedor.html")
+    )
       window.location.replace("inicio-proveedor.html");
+    if (session.role === "Cliente" && document.querySelector("#provider-nav"))
+      window.location.replace("app.html");
     if (appName) appName.textContent = `${session.firstName} ${session.lastName}`;
     if (appRole) appRole.textContent = session.role;
     const clientFirstName = document.querySelector("#client-first-name");
     if (clientFirstName) clientFirstName.textContent = session.firstName;
     const providerGreeting = document.querySelector("#provider-greeting");
     if (providerGreeting) providerGreeting.textContent = session.firstName;
-    const providerProfileName = document.querySelector("#provider-profile-name");
-    if (providerProfileName && !localStorage.getItem("hogarfix.provider.profile.v1"))
-      providerProfileName.textContent = `${session.firstName} ${session.lastName}`;
   }
 }
 
@@ -361,208 +368,8 @@ else {
   if (firstClientChat) selectClientChat(firstClientChat);
 }
 
-// Provider screens in WEB FINAL share one persistent demo request state.
-const PROVIDER_REQUESTS_KEY = "hogarfix.provider.requests.v1";
-const sampleProviderRequests = [
-  {
-    id: "P-1001",
-    client: "Juan Pérez",
-    service: "Plomería",
-    date: "26 ago, 2026 · 9:00 am",
-    address: "Carrera 15 #20-20, Apto 501",
-    detail:
-      "Tengo una fuga en el lavaplatos que lleva varios días, el agua escurre por debajo del mueble.",
-    amount: 35000,
-    status: "Pendiente",
-  },
-  {
-    id: "P-1002",
-    client: "Luis Fernández",
-    service: "Plomería",
-    date: "20 ago, 2026 · 8:00 am",
-    address: "Transversal 93 #55-12",
-    detail: "Revisión y mantenimiento general de fontanería.",
-    amount: 35000,
-    status: "Pendiente",
-  },
-  {
-    id: "P-1003",
-    client: "María López",
-    service: "Plomería",
-    date: "27 ago, 2026 · 11:00 am",
-    address: "Av. 68 #23-45, Casa 12",
-    detail: "Cambio de grifo en el baño principal y revisión de tubería.",
-    amount: 35000,
-    status: "Confirmada",
-  },
-  {
-    id: "P-1004",
-    client: "Carlos García",
-    service: "Plomería",
-    date: "24 ago, 2026 · 2:00 pm",
-    address: "Calle 80 #40-30",
-    detail: "Instalación de calentador de agua nuevo.",
-    amount: 35000,
-    status: "En proceso",
-  },
-  {
-    id: "P-1005",
-    client: "Ana Ruiz",
-    service: "Plomería",
-    date: "15 ago, 2026 · 10:00 am",
-    address: "Calle 45 #28-10",
-    detail: "Reparación de tuberías de agua caliente.",
-    amount: 35000,
-    status: "Completada",
-  },
-];
-function getProviderRequests() {
-  let stored = readStoredArray(PROVIDER_REQUESTS_KEY);
-  const providerName = getProviderName();
-  const customerRequests = readStoredArray(CLIENT_REQUESTS_KEY)
-    .filter((item) => normalizeKey(item.provider) === normalizeKey(providerName))
-    .map((item) => ({
-      ...item,
-      client: item.clientName,
-      date: `${item.date} · ${item.time}`,
-      source: "client",
-    }));
-  if (!stored.length && !customerRequests.length)
-    return sampleProviderRequests.map((item) => ({ ...item }));
-  return [...customerRequests, ...stored];
-}
-function saveProviderRequests(items) {
-  const localItems = items.filter((item) => item.source !== "client");
-  writeStoredArray(PROVIDER_REQUESTS_KEY, localItems);
-  const customerRequests = readStoredArray(CLIENT_REQUESTS_KEY);
-  items
-    .filter((item) => item.source === "client")
-    .forEach((item) => {
-      const target = customerRequests.find((request) => request.id === item.id);
-      if (target) target.status = item.status;
-    });
-  writeStoredArray(CLIENT_REQUESTS_KEY, customerRequests);
-}
-function safeText(value) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    (character) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
-  );
-}
-function providerRequestCard(item, detail = false) {
-  const statusClass = item.status.toLowerCase().replaceAll(" ", "-");
-  const actions =
-    item.status === "Pendiente"
-      ? `<button class="button button-small" data-provider-action="accept" data-id="${safeText(item.id)}">✓ Aceptar</button><button class="button button-small danger-button" data-provider-action="reject" data-id="${safeText(item.id)}">× Rechazar</button>`
-      : item.status === "Aceptada"
-        ? `<span class="waiting-note">Esperando confirmación del cliente</span>`
-        : item.status === "Confirmada"
-          ? `<button class="button button-small" data-provider-action="start" data-id="${safeText(item.id)}">Marcar en proceso</button>`
-          : item.status === "En proceso"
-            ? `<button class="button button-small" data-provider-action="complete" data-id="${safeText(item.id)}">Marcar completo</button>`
-            : "";
-  const body = `<div class="provider-request-top"><div><h3>${safeText(item.client)}</h3><p>${safeText(item.service)} · ${safeText(item.date)}</p><p>${safeText(item.address)}</p></div><div class="provider-request-price"><strong>$${Number(item.amount).toLocaleString("es-CO")}</strong><small>Hace 3 horas</small></div></div><p class="provider-request-description">${safeText(item.detail)}</p><div class="provider-request-bottom"><span class="request-status status-${statusClass}">● ${safeText(item.status)}</span><div class="provider-request-actions">${actions}<a href="detalle-proveedor.html?id=${encodeURIComponent(item.id)}">Ver detalles</a><a href="mensajes-proveedor.html?chat=${encodeURIComponent(item.client)}">Chat</a></div></div>`;
-  return `<article class="provider-request-card ${detail ? "provider-request-detail-card" : ""}">${body}</article>`;
-}
-function renderProviderDashboard() {
-  const requests = getProviderRequests();
-  const pending = document.querySelector("#provider-dashboard-requests");
-  const inProgress = document.querySelector("#provider-inprogress");
-  if (pending)
-    pending.innerHTML =
-      requests
-        .filter((item) => item.status === "Pendiente")
-        .slice(0, 2)
-        .map((item) => providerRequestCard(item))
-        .join("") || '<p class="empty-state">No tienes solicitudes nuevas.</p>';
-  if (inProgress)
-    inProgress.innerHTML =
-      requests
-        .filter((item) => item.status === "En proceso")
-        .map((item) => providerRequestCard(item))
-        .join("") || '<p class="empty-state">No tienes servicios en proceso.</p>';
-  const count = document.querySelector("#provider-pending-count");
-  if (count) count.textContent = requests.filter((item) => item.status === "Pendiente").length;
-}
-function renderProviderRequestList(filter = "Todas") {
-  const target = document.querySelector("#provider-request-list");
-  if (!target) return;
-  const items = getProviderRequests().filter(
-    (item) => filter === "Todas" || item.status === filter,
-  );
-  target.innerHTML =
-    items.map((item) => providerRequestCard(item)).join("") ||
-    '<p class="empty-state">No hay solicitudes en este estado.</p>';
-}
-renderProviderDashboard();
-renderProviderRequestList(new URLSearchParams(location.search).get("estado") || "Todas");
-document.querySelectorAll("[data-provider-filter]").forEach((button) => {
-  if (button.dataset.providerFilter === new URLSearchParams(location.search).get("estado")) {
-    document
-      .querySelectorAll("[data-provider-filter]")
-      .forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
-  }
-  button.addEventListener("click", () => {
-    document
-      .querySelectorAll("[data-provider-filter]")
-      .forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
-    renderProviderRequestList(button.dataset.providerFilter);
-  });
-});
-document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-provider-action]");
-  if (!button) return;
-  const requests = getProviderRequests();
-  const request = requests.find((item) => item.id === button.dataset.id);
-  if (!request) return;
-  const next = {
-    accept: "Aceptada",
-    reject: "Rechazada",
-    start: "En proceso",
-    complete: "Completada",
-  }[button.dataset.providerAction];
-  if (next) request.status = next;
-  saveProviderRequests(requests);
-  renderProviderDashboard();
-  const active =
-    document.querySelector("[data-provider-filter][aria-pressed=true]")?.dataset.providerFilter ||
-    new URLSearchParams(location.search).get("estado") ||
-    "Todas";
-  renderProviderRequestList(active);
-  renderProviderRequestDetail();
-});
-function renderProviderRequestDetail() {
-  const target = document.querySelector("#provider-request-detail");
-  if (!target) return;
-  const id = new URLSearchParams(location.search).get("id");
-  const request = getProviderRequests().find((item) => item.id === id) || getProviderRequests()[0];
-  target.innerHTML = request
-    ? providerRequestCard(request, true)
-    : '<p class="empty-state">No encontramos esa solicitud.</p>';
-}
-renderProviderRequestDetail();
-const providerProfileForm = document.querySelector("#provider-profile-form");
-if (providerProfileForm) {
-  try {
-    const saved = JSON.parse(localStorage.getItem("hogarfix.provider.profile.v1") || "null");
-    if (saved)
-      Object.entries(saved).forEach(([key, value]) => {
-        if (providerProfileForm.elements[key]) providerProfileForm.elements[key].value = value;
-      });
-  } catch {
-    /* Keep the Figma demo defaults. */
-  }
-  providerProfileForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const values = Object.fromEntries(new FormData(providerProfileForm));
-    localStorage.setItem("hogarfix.provider.profile.v1", JSON.stringify(values));
-    const name = document.querySelector("#provider-profile-name");
-    if (name) name.textContent = values.name;
-    document.querySelector("#provider-profile-message").textContent =
-      "Cambios guardados en este navegador.";
-  });
-}
+// Las solicitudes del proveedor se gestionan en js/components/panel-proveedor.js
+// y su perfil en js/components/perfil.js.
 const providerMessageForm = document.querySelector("#provider-chat-form");
 let activeProviderChat = null;
 providerMessageForm?.addEventListener("submit", (event) => {

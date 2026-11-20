@@ -18,14 +18,14 @@ function providerCard(item) {
       data-category="${escapeHTML(item.categorias.join(" "))}"
       data-available="${item.available}">
       <div class="search-provider-top">
-        <img class="search-provider-avatar" src="assets/provider-avatar.svg" alt="" />
+        <img class="search-provider-avatar" src="${escapeHTML(item.photo || "assets/provider-avatar.svg")}" alt="" />
         <div><h2>${escapeHTML(item.name)}</h2><p>${escapeHTML(item.profession)}</p></div>
         <span class="presence-dot${item.available ? "" : " offline"}" aria-label="${item.available ? "Disponible" : "Ocupado"}"></span>
       </div>
       <dl class="provider-facts">
-        <div><dt>Ranking:</dt><dd class="provider-rating"><span aria-label="${item.rating} de 5 estrellas">${stars(item.rating)}</span> ${Number(item.rating).toFixed(1)}</dd></div>
+        <div><dt>Ranking:</dt><dd class="provider-rating">${item.rating == null ? "Nuevo en HogarFix" : `<span aria-label="${item.rating} de 5 estrellas">${stars(item.rating)}</span> ${Number(item.rating).toFixed(1)}`}</dd></div>
         <div><dt>Servicio:</dt><dd>${escapeHTML(item.services.join(", "))}</dd></div>
-        <div><dt>Distancia:</dt><dd><img src="assets/provider-pin.svg" alt="" /> ${escapeHTML(item.distanceKm)} Km Aprox.</dd></div>
+        <div><dt>Distancia:</dt><dd><img src="assets/provider-pin.svg" alt="" /> ${item.distanceKm == null ? escapeHTML(item.zone || "Bogotá") : `${escapeHTML(item.distanceKm)} Km Aprox.`}</dd></div>
         <div><dt>Estado:</dt>${status}</div>
       </dl>
       <a class="button profile-button" href="perfil-proveedor.html?id=${encodeURIComponent(item.id)}">Ver Perfil</a>
@@ -113,8 +113,19 @@ async function loadProfile() {
       document.querySelectorAll(selector).forEach((node) => (node.textContent = value));
     fill("[data-provider-name]", proveedor.name);
     fill("[data-provider-profession]", proveedor.profession);
-    fill("[data-provider-rating]", Number(proveedor.rating).toFixed(1));
+    fill(
+      "[data-provider-rating]",
+      proveedor.rating == null ? "Nuevo" : Number(proveedor.rating).toFixed(1),
+    );
+    document
+      .querySelectorAll("[data-provider-photo]")
+      .forEach((img) => proveedor.photo && img.setAttribute("src", proveedor.photo));
     fill("[data-provider-jobs]", proveedor.jobs);
+    // Un profesional nuevo todavía no tiene satisfacción medida.
+    fill(
+      "[data-provider-satisfaction]",
+      proveedor.rating == null ? "—" : `${Math.round((proveedor.rating / 5) * 100)}%`,
+    );
     fill("[data-provider-reviews]", proveedor.reviews);
     fill("[data-provider-service]", proveedor.services.join(" · "));
     fill("[data-provider-zone]", `📍 ${proveedor.zone}`);

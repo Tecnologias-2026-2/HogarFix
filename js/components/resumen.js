@@ -78,6 +78,8 @@ function render(solicitud) {
         <div><dt>Hora</dt><dd>${escapeHTML(solicitud.time)}</dd></div>
         <div><dt>Ubicación</dt><dd>${escapeHTML(solicitud.address)}</dd></div>
         <div class="invoice-wide"><dt>Trabajo solicitado</dt><dd>${escapeHTML(solicitud.detail)}</dd></div>
+        <div><dt>Método de pago</dt><dd>${escapeHTML(solicitud.paymentMethod?.nombre || "No indicado")}</dd></div>
+        <div><dt>Estado del pago</dt><dd>${escapeHTML(solicitud.paymentStatus || "Pendiente")}</dd></div>
         <div><dt>Estado</dt><dd><span class="request-status ${statusClass(solicitud.status)}">● ${escapeHTML(solicitud.status)}</span></dd></div>
         <div><dt>Creada</dt><dd>${escapeHTML(formatDateTime(solicitud.createdAt))}</dd></div>
       </dl>
@@ -85,7 +87,11 @@ function render(solicitud) {
         <span>Tarifa fija · ${escapeHTML(solicitud.service)}</span>
         <strong>${formatCOP(solicitud.amount)}</strong>
       </div>
-      <p class="invoice-note">La tarifa corresponde al precio fijo de la categoría y no puede modificarse.</p>
+      <p class="invoice-note">La tarifa corresponde al precio fijo de la categoría y no puede modificarse.${
+        solicitud.paymentMethod?.tipo === "en-linea"
+          ? " Todavía no se ha realizado ningún cobro: el pago en línea se habilitará cuando se integre la pasarela de pagos."
+          : ""
+      }</p>
     </article>
 
     <p id="summary-message" class="form-feedback" role="status" aria-live="polite"></p>
