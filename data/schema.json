@@ -111,15 +111,30 @@
         "type": "string",
         "required": true,
         "example": "Revisión de una luminaria"
+      },
+      "metodoPago": {
+        "type": "string",
+        "required": true,
+        "example": "efectivo"
       }
     }
   },
   "proveedores": {
     "fields": {
-      "name": {
+      "firstName": {
         "type": "string",
         "required": true,
-        "example": "Sebastián Torres"
+        "example": "Ana"
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "example": "Torres"
+      },
+      "profession": {
+        "type": "string",
+        "required": false,
+        "example": "Plomera certificada"
       },
       "bio": {
         "type": "string",
@@ -128,31 +143,56 @@
       },
       "phone": {
         "type": "string",
-        "required": false,
+        "required": true,
         "example": "+57 300 123 45 67"
       },
       "zone": {
         "type": "string",
         "required": false,
-        "example": "Bogotá, Colombia"
+        "example": "Bogotá norte"
       },
-      "rate": {
+      "radiusKm": {
         "type": "number",
         "required": false,
-        "example": 95000
+        "example": 15
       },
-      "availability": {
+      "categorias": {
+        "type": "array",
+        "required": true,
+        "example": [
+          "plomeria"
+        ]
+      },
+      "days": {
+        "type": "array",
+        "required": true,
+        "example": [
+          "lun",
+          "mar",
+          "mie",
+          "jue",
+          "vie"
+        ]
+      },
+      "startTime": {
+        "type": "string",
+        "required": true,
+        "example": "08:00"
+      },
+      "endTime": {
+        "type": "string",
+        "required": true,
+        "example": "18:00"
+      },
+      "available": {
+        "type": "boolean",
+        "required": false,
+        "example": true
+      },
+      "photo": {
         "type": "string",
         "required": false,
-        "example": "Lun - Sáb, 8:00 am - 6:00 pm"
-      },
-      "services": {
-        "type": "array",
-        "required": false,
-        "example": [
-          "Plomería",
-          "Electricidad"
-        ]
+        "example": "URL de Firebase Storage"
       }
     }
   },
@@ -162,6 +202,50 @@
         "type": "string",
         "required": true,
         "example": "Confirmo la visita para las 10:00 a. m."
+      }
+    }
+  },
+  "perfilCliente": {
+    "fields": {
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "example": "Laura"
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "example": "Bojacá"
+      },
+      "phone": {
+        "type": "string",
+        "required": false,
+        "example": "+57 301 234 56 78"
+      },
+      "city": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá"
+      },
+      "address": {
+        "type": "string",
+        "required": false,
+        "example": "Calle 45 #28-10"
+      },
+      "bio": {
+        "type": "string",
+        "required": false,
+        "example": "Vivo en apartamento con mascotas."
+      },
+      "preferredPayment": {
+        "type": "string",
+        "required": false,
+        "example": "nequi"
+      },
+      "photo": {
+        "type": "string",
+        "required": false,
+        "example": "URL de Firebase Storage"
       }
     }
   }

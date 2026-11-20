@@ -3226,3 +3226,303 @@ h2 {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Perfiles editables (ISSUES #30 y #31)
+   ========================================================================== */
+.profile-form {
+  display: grid;
+  gap: 14px;
+}
+.profile-form h2 {
+  margin: 10px 0 0;
+  font-size: 17px;
+}
+.profile-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.profile-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.profile-form select,
+.profile-form textarea {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #dce5f1;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+.profile-form [readonly] {
+  background: #f4f7fb;
+  color: var(--muted);
+}
+.profile-form [aria-invalid="true"] {
+  border-color: #d92d20;
+  background: #fffbfa;
+}
+.profile-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+.profile-photo {
+  width: 96px;
+  height: 96px;
+  border: 3px solid #e2eaf4;
+  border-radius: 50%;
+  background: #eff6ff;
+  object-fit: cover;
+}
+.profile-photo-name {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+.photo-upload {
+  cursor: pointer;
+}
+.profile-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.profile-form .service-tags label,
+.switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.switch-row input,
+.profile-form .service-tags input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+.client-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.search-provider-avatar,
+.profile-large-avatar {
+  object-fit: cover;
+  border-radius: 50%;
+}
+.profile-tip {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fff7db;
+  color: #7a5200;
+  font-size: 14px;
+}
+.provider-request-payment {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   Contraseñas (ISSUE #32)
+   ========================================================================== */
+.password-field {
+  position: relative;
+  display: block;
+}
+.password-field input {
+  width: 100%;
+  padding-right: 44px !important;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: #eff6ff;
+  color: var(--blue);
+}
+.password-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.password-rules li::before {
+  content: "○ ";
+}
+.password-rules li.is-ok {
+  color: #16834b;
+}
+.password-rules li.is-ok::before {
+  content: "✓ ";
+  font-weight: 700;
+}
+.password-match {
+  min-height: 0;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.password-match:empty {
+  display: none;
+}
+.password-match.is-ok {
+  color: #16834b;
+}
+.password-match.is-error {
+  color: #b42318;
+}
+.register-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Métodos de pago (ISSUE #32 - pagos)
+   ========================================================================== */
+.payment-methods {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.payment-methods legend {
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.payment-options {
+  display: grid;
+  gap: 8px;
+}
+.payment-option {
+  display: grid !important;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dce5f1;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.payment-option:has(input:checked) {
+  border-color: var(--blue);
+  background: #eff6ff;
+}
+.payment-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+.payment-icon {
+  font-size: 20px;
+}
+.payment-option strong,
+.payment-option small {
+  display: block;
+}
+.payment-option small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.payment-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.booking-summary {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #eff6ff;
+  font-size: 13px;
+}
+.booking-summary-title {
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.booking-summary dl {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 6px;
+}
+.booking-summary dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.booking-summary dt {
+  color: var(--muted);
+}
+.booking-summary dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+  text-align: right;
+}
+.booking-summary-total dd {
+  color: var(--blue);
+  font-size: 18px;
+}
+.booking-summary small {
+  color: var(--muted);
+  font-size: 11px;
+}
+@media (max-width: 600px) {
+  .password-rules {
+    grid-template-columns: 1fr;
+  }
+  .payment-option {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+  .payment-badge {
+    grid-column: 3;
+    justify-self: start;
+  }
+}
+.profile-form .switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}

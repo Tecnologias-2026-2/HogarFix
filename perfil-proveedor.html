@@ -26,7 +26,8 @@
         </button>
         <nav id="client-nav" class="primary-nav client-nav" aria-label="Navegación del cliente">
           <a href="app.html#inicio">Inicio</a><a href="buscar.html">Buscar</a
-          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a>
+          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a
+          ><a href="mi-perfil.html">Mi Perfil</a>
         </nav>
         <div class="nav-actions client-account">
           <span class="client-avatar"><img src="assets/figma-search-user.svg" alt="" /></span
@@ -43,7 +44,12 @@
         <div class="flow-column">
           <section class="flow-panel provider-profile-card">
             <div class="profile-summary">
-              <img class="profile-large-avatar" src="assets/provider-avatar.svg" alt="" />
+              <img
+                class="profile-large-avatar"
+                src="assets/provider-avatar.svg"
+                alt=""
+                data-provider-photo
+              />
               <div>
                 <span class="verified-label">✓ Profesional verificado</span>
                 <h1 data-provider-name>Carlos Ramírez</h1>
@@ -58,10 +64,10 @@
             <div class="profile-stats">
               <div><strong data-provider-jobs>356</strong><span>Trabajos</span></div>
               <div><strong data-provider-reviews>48</strong><span>Reseñas</span></div>
-              <div><strong>98%</strong><span>Satisfacción</span></div>
+              <div><strong data-provider-satisfaction>98%</strong><span>Satisfacción</span></div>
               <div>
                 <strong>★ <span data-provider-rating>4.9</span></strong
-                ><span>(82 opiniones)</span>
+                ><span>Calificación</span>
               </div>
             </div>
             <h2>Sobre el profesional</h2>
@@ -175,10 +181,30 @@
               ></textarea>
               <span class="field-error" id="detail-error"></span>
             </label>
-            <div class="fixed-rate" aria-live="polite">
-              <span>Tarifa fija de la categoría</span>
-              <strong id="booking-rate">—</strong>
-              <small>El precio no se puede modificar.</small>
+            <fieldset class="payment-methods" aria-describedby="payment-error">
+              <legend>Método de pago</legend>
+              <div class="payment-options" id="payment-options">
+                <p class="load-state">Cargando métodos de pago…</p>
+              </div>
+              <span class="field-error" id="payment-error"></span>
+            </fieldset>
+            <div class="booking-summary" aria-live="polite">
+              <p class="booking-summary-title">Resumen antes de enviar</p>
+              <dl>
+                <div>
+                  <dt>Servicio</dt>
+                  <dd id="summary-service">—</dd>
+                </div>
+                <div>
+                  <dt>Método de pago</dt>
+                  <dd id="summary-payment">Sin seleccionar</dd>
+                </div>
+                <div class="booking-summary-total">
+                  <dt>Tarifa fija</dt>
+                  <dd id="booking-rate">—</dd>
+                </div>
+              </dl>
+              <small id="payment-note">El precio no se puede modificar.</small>
             </div>
             <button class="button register-submit" type="submit" disabled>
               Solicitar servicio
