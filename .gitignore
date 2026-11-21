@@ -9,3 +9,8 @@ Thumbs.db
 
 # Configuración local del editor
 .vscode/
+
+# Firebase Admin service-account keys
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
