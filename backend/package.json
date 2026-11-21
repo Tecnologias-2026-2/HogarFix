@@ -1,0 +1,24 @@
+{
+  "name": "hogarfix-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/auth-middleware.test.js test/profile-routes.test.js test/request-routes.test.js test/request-service.test.js test/request-validation.test.js",
+    "test:emulator": "firebase emulators:exec --config ..\\firebase.json --project demo-hogarfix --only firestore \"node scripts/run-emulator-tests.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "firebase-admin": "^14.5.1"
+  },
+  "devDependencies": {
+    "@google-cloud/firestore": "^9.4.1",
+    "firebase-tools": "^15.37.0"
+  }
+}

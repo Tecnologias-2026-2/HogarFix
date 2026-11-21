@@ -15,3 +15,8 @@ Claude outputs/
 Claude outputs/
 
 Claude outputs/
+
+# Firebase Admin service-account keys
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
