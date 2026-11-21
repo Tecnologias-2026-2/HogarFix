@@ -1,0 +1,275 @@
+{
+  "categorias": {
+    "fields": {
+      "id": {
+        "type": "string",
+        "required": true,
+        "example": "plomeria"
+      },
+      "nombre": {
+        "type": "string",
+        "required": true,
+        "example": "Plomería"
+      },
+      "descripcion": {
+        "type": "string",
+        "required": false,
+        "example": "Reparación de fugas, grifos y tuberías."
+      },
+      "tarifa": {
+        "type": "number",
+        "required": true,
+        "example": 35000
+      }
+    }
+  },
+  "usuarios": {
+    "fields": {
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "example": "Laura"
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "example": "Bojacá"
+      },
+      "email": {
+        "type": "string",
+        "required": true,
+        "example": "laura@example.com"
+      },
+      "password": {
+        "type": "string",
+        "required": true,
+        "example": "********"
+      },
+      "confirmPassword": {
+        "type": "string",
+        "required": true,
+        "example": "********"
+      },
+      "terms": {
+        "type": "boolean",
+        "required": true,
+        "example": true
+      }
+    }
+  },
+  "sesiones": {
+    "fields": {
+      "email": {
+        "type": "string",
+        "required": true,
+        "example": "laura@example.com"
+      },
+      "password": {
+        "type": "string",
+        "required": true,
+        "example": "********"
+      }
+    }
+  },
+  "busquedas": {
+    "fields": {
+      "q": {
+        "type": "string",
+        "required": false,
+        "example": "Electricidad"
+      },
+      "availableOnly": {
+        "type": "boolean",
+        "required": false,
+        "example": true
+      }
+    }
+  },
+  "solicitudes": {
+    "fields": {
+      "service": {
+        "type": "string",
+        "required": true,
+        "example": "Electricidad"
+      },
+      "date": {
+        "type": "string",
+        "required": true,
+        "example": "2026-11-12"
+      },
+      "time": {
+        "type": "string",
+        "required": true,
+        "example": "10:00 a. m."
+      },
+      "address": {
+        "type": "string",
+        "required": true,
+        "example": "Calle 45 #28-10"
+      },
+      "detail": {
+        "type": "string",
+        "required": true,
+        "example": "Revisión de una luminaria"
+      },
+      "metodoPago": {
+        "type": "string",
+        "required": false,
+        "example": "efectivo"
+      }
+    }
+  },
+  "proveedores": {
+    "fields": {
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "example": "Ana"
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "example": "Torres"
+      },
+      "profession": {
+        "type": "string",
+        "required": false,
+        "example": "Plomera certificada"
+      },
+      "bio": {
+        "type": "string",
+        "required": false,
+        "example": "Profesional con experiencia en servicios confiables para el hogar."
+      },
+      "phone": {
+        "type": "string",
+        "required": true,
+        "example": "+57 300 123 45 67"
+      },
+      "zone": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá norte"
+      },
+      "radiusKm": {
+        "type": "number",
+        "required": false,
+        "example": 15
+      },
+      "experienceYears": {
+        "type": "number",
+        "required": false,
+        "example": 5
+      },
+      "coverageZone": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá"
+      },
+      "availability": {
+        "type": "string",
+        "required": false,
+        "example": "Lun - Sáb, 8:00 am - 6:00 pm"
+      },
+      "services": {
+        "type": "array",
+        "required": false,
+        "example": [
+          "plomeria",
+          "electricidad"
+        ]
+      },
+      "categorias": {
+        "type": "array",
+        "required": true,
+        "example": [
+          "plomeria"
+        ]
+      },
+      "days": {
+        "type": "array",
+        "required": true,
+        "example": [
+          "lun",
+          "mar",
+          "mie",
+          "jue",
+          "vie"
+        ]
+      },
+      "startTime": {
+        "type": "string",
+        "required": true,
+        "example": "08:00"
+      },
+      "endTime": {
+        "type": "string",
+        "required": true,
+        "example": "18:00"
+      },
+      "available": {
+        "type": "boolean",
+        "required": false,
+        "example": true
+      },
+      "photo": {
+        "type": "string",
+        "required": false,
+        "example": "URL de Firebase Storage (integración pendiente)"
+      }
+    }
+  },
+  "mensajes": {
+    "fields": {
+      "message": {
+        "type": "string",
+        "required": true,
+        "example": "Confirmo la visita para las 10:00 a. m."
+      }
+    }
+  },
+  "perfilCliente": {
+    "fields": {
+      "firstName": {
+        "type": "string",
+        "required": true,
+        "example": "Laura"
+      },
+      "lastName": {
+        "type": "string",
+        "required": true,
+        "example": "Bojacá"
+      },
+      "phone": {
+        "type": "string",
+        "required": false,
+        "example": "+57 301 234 56 78"
+      },
+      "city": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá"
+      },
+      "address": {
+        "type": "string",
+        "required": false,
+        "example": "Calle 45 #28-10"
+      },
+      "bio": {
+        "type": "string",
+        "required": false,
+        "example": "Vivo en apartamento con mascotas."
+      },
+      "preferredPayment": {
+        "type": "string",
+        "required": false,
+        "example": "nequi"
+      },
+      "photo": {
+        "type": "string",
+        "required": false,
+        "example": "URL de Firebase Storage"
+      }
+    }
+  }
+}

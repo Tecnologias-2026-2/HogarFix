@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Gestiona tu perfil personal de HogarFix." />
+    <title>Mi perfil | HogarFix</title>
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="search-page">
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="app.html" aria-label="HogarFix, inicio"
+          ><img src="assets/logo.png" alt="" width="28" height="28" /><span
+            ><strong>HOGARFIX</strong><small>Calidad en cada arreglo</small></span
+          ></a
+        ><button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="client-nav"
+          aria-label="Abrir menú"
+        >
+          ☰
+        </button>
+        <nav id="client-nav" class="primary-nav client-nav" aria-label="Navegación del cliente">
+          <a href="app.html">Inicio</a><a href="buscar.html">Buscar</a
+          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a
+          ><a href="mi-perfil-cliente.html" aria-current="page">Mi Perfil</a>
+        </nav>
+        <div class="nav-actions client-account">
+          <span class="client-avatar"><img src="assets/figma-search-user.svg" alt="" /></span
+          ><span class="client-name" id="app-user-name"></span
+          ><button class="button button-small logout-button" id="logout-button" type="button">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="flow-main container">
+      <a class="flow-back" href="app.html">← Inicio</a>
+      <p class="eyebrow">Tu cuenta HogarFix</p>
+      <h1 class="flow-title">Mi perfil</h1>
+      <form id="client-personal-form" class="flow-panel provider-profile-form">
+        <h2>Información personal</h2>
+        <div class="form-row">
+          <label>Nombre<input name="firstName" autocomplete="given-name" required /></label
+          ><label>Apellido<input name="lastName" autocomplete="family-name" required /></label>
+        </div>
+        <div class="form-row">
+          <label>Correo electrónico<input id="client-profile-email" type="email" disabled /></label
+          ><label>Teléfono<input name="phone" type="tel" autocomplete="tel" /></label>
+        </div>
+        <p class="muted-copy">El correo y el tipo de cuenta no se pueden cambiar desde el perfil.</p>
+        <div class="form-actions">
+          <button class="button" type="submit">Guardar cambios</button>
+          <a class="button button-outline-blue" href="app.html">Cancelar</a>
+        </div>
+        <p id="client-profile-message" class="muted-copy" aria-live="polite"></p>
+      </form>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-bottom">
+          <span>© <span id="year"></span> HogarFix. Todos los derechos reservados.</span>
+          <span>Tu información se guarda en HogarFix.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

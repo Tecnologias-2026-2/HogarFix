@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Inicia sesión en HogarFix." />
+    <title>Iniciar sesión | HogarFix</title>
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="register-page">
+    <a class="skip-link" href="#login-form">Saltar al formulario</a>
+    <main class="register-shell">
+      <section class="register-card" aria-labelledby="login-title">
+        <a class="register-logo" href="index.html" aria-label="Volver a HogarFix"
+          ><img src="assets/logo.png" alt="HogarFix" width="48" height="48"
+        /></a>
+        <div id="login-panel">
+          <div class="register-title-row">
+            <a class="back-link" href="index.html" aria-label="Volver al inicio">←</a>
+            <div>
+              <h1 id="login-title">Inicia sesión</h1>
+              <p>Como <strong id="login-role">Cliente</strong> · Bienvenido de nuevo a HogarFix</p>
+            </div>
+          </div>
+          <form id="login-form" novalidate onsubmit="return false;">
+            <label class="login-field"
+              >Correo electrónico<input
+                name="email"
+                type="email"
+                autocomplete="email"
+                placeholder="tu@correo.com"
+                required
+            /></label>
+            <label class="login-field"
+              >Contraseña<input
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Tu contraseña"
+                required
+            /></label>
+            <button class="button register-submit" type="submit">Iniciar sesión</button>
+            <p class="register-message" id="login-message" role="status" aria-live="polite"></p>
+            <p class="register-login">
+              <a id="show-recovery-link" href="#password-recovery">¿Olvidaste tu contraseña?</a>
+            </p>
+          </form>
+          <p class="register-login">
+            ¿No tienes cuenta?
+            <a id="login-register-link" href="registro.html?tipo=cliente">Crea tu cuenta</a>
+          </p>
+        </div>
+        <section id="password-recovery-panel" hidden aria-labelledby="password-recovery-title">
+          <div class="register-title-row">
+            <div>
+              <h1 id="password-recovery-title">Recuperar contraseña</h1>
+              <p>Te enviaremos instrucciones si existe una cuenta con ese correo.</p>
+            </div>
+          </div>
+          <form id="password-recovery-form" novalidate onsubmit="return false;">
+            <label class="login-field"
+              >Correo electrónico<input
+                name="email"
+                type="email"
+                autocomplete="email"
+                placeholder="tu@correo.com"
+                required
+            /></label>
+            <button class="button register-submit" type="submit">Enviar instrucciones</button>
+            <p
+              class="register-message"
+              id="password-recovery-message"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <p class="register-login">
+              <a id="back-to-login-link" href="#login-form">Volver al inicio de sesión</a>
+            </p>
+          </form>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

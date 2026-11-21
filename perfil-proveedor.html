@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Perfil del profesional | HogarFix</title>
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="search-page">
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="app.html#inicio"
+          ><img src="assets/logo.png" alt="" width="36" height="36" /><span
+            ><strong>HOGARFIX</strong><small>Calidad en cada arreglo</small></span
+          ></a
+        ><button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="client-nav"
+          aria-label="Abrir menú"
+        >
+          ☰
+        </button>
+        <nav id="client-nav" class="primary-nav client-nav" aria-label="Navegación del cliente">
+          <a href="app.html#inicio">Inicio</a><a href="buscar.html">Buscar</a
+          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a
+          ><a href="mi-perfil.html">Mi Perfil</a>
+        </nav>
+        <div class="nav-actions client-account">
+          <span class="client-avatar"><img src="assets/figma-search-user.svg" alt="" /></span
+          ><span class="client-name" id="app-user-name">Cliente</span
+          ><button class="button button-small logout-button" id="logout-button" type="button">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="flow-main container">
+      <a class="flow-back" href="buscar.html">← Volver a resultados</a>
+      <div class="provider-profile-layout">
+        <div class="flow-column">
+          <section class="flow-panel provider-profile-card">
+            <div class="profile-summary">
+              <img
+                class="profile-large-avatar"
+                src="assets/provider-avatar.svg"
+                alt=""
+                data-provider-photo
+              />
+              <div>
+                <span class="verified-label">✓ Profesional verificado</span>
+                <h1 data-provider-name>Carlos Ramírez</h1>
+                <p data-provider-profession>Electricista</p>
+                <div class="profile-tags">
+                  <span data-provider-service>Electricidad</span
+                  ><span data-provider-zone>📍 Bogotá, Colombia</span>
+                </div>
+              </div>
+              <a class="button button-small" href="chat.html" data-provider-chat>Chat</a>
+            </div>
+            <div class="profile-stats">
+              <div><strong data-provider-jobs>356</strong><span>Trabajos</span></div>
+              <div><strong data-provider-reviews>48</strong><span>Reseñas</span></div>
+              <div><strong data-provider-satisfaction>98%</strong><span>Satisfacción</span></div>
+              <div>
+                <strong>★ <span data-provider-rating>4.9</span></strong
+                ><span>Calificación</span>
+              </div>
+            </div>
+            <h2>Sobre el profesional</h2>
+            <p class="muted-copy" data-provider-bio>
+              Profesional certificado, puntual y comprometido con ofrecer soluciones seguras y de
+              calidad para tu hogar.
+            </p>
+          </section>
+          <section class="flow-panel">
+            <h2>Horarios disponibles</h2>
+            <p class="muted-copy">
+              Selecciona un horario para tu servicio. Atiende:
+              <strong data-provider-availability>Lun - Sáb, 8:00 am - 6:00 pm</strong>
+            </p>
+            <div class="time-options">
+              <label
+                ><input
+                  type="radio"
+                  name="time-choice"
+                  value="8:00 a. m."
+                  form="booking-form"
+                /><span>8:00 a. m.</span></label
+              ><label
+                ><input
+                  type="radio"
+                  name="time-choice"
+                  value="10:00 a. m."
+                  form="booking-form"
+                  checked
+                /><span>10:00 a. m.</span></label
+              ><label
+                ><input
+                  type="radio"
+                  name="time-choice"
+                  value="1:00 p. m."
+                  form="booking-form"
+                /><span>1:00 p. m.</span></label
+              ><label
+                ><input
+                  type="radio"
+                  name="time-choice"
+                  value="3:30 p. m."
+                  form="booking-form"
+                /><span>3:30 p. m.</span></label
+              ><label
+                ><input
+                  type="radio"
+                  name="time-choice"
+                  value="5:00 p. m."
+                  form="booking-form"
+                /><span>5:00 p. m.</span></label
+              >
+            </div>
+          </section>
+          <section class="flow-panel">
+            <h2>Reseñas de clientes</h2>
+            <div id="provider-reviews"><p class="load-state">Cargando reseñas…</p></div>
+          </section>
+        </div>
+        <aside class="flow-panel booking-panel">
+          <p class="eyebrow">Agenda tu servicio</p>
+          <h2>Solicitar servicio</h2>
+          <p class="muted-copy">Completa los datos para enviar tu solicitud al profesional.</p>
+          <form id="booking-form" class="booking-form" novalidate>
+            <label
+              >Servicio
+              <select name="service" required aria-describedby="service-error">
+                <option value="">Cargando categorías…</option>
+              </select>
+              <span class="field-error" id="service-error"></span>
+            </label>
+            <label
+              >Fecha
+              <input type="date" name="date" required aria-describedby="date-error" />
+              <span class="field-error" id="date-error"></span>
+            </label>
+            <label
+              >Hora
+              <select name="time" required aria-describedby="time-error">
+                <option>8:00 a. m.</option>
+                <option selected>10:00 a. m.</option>
+                <option>1:00 p. m.</option>
+                <option>3:30 p. m.</option>
+                <option>5:00 p. m.</option>
+              </select>
+              <span class="field-error" id="time-error"></span>
+            </label>
+            <label
+              >Dirección
+              <input
+                name="address"
+                placeholder="Ej.: Calle 45 #28-10, Apto 301"
+                autocomplete="street-address"
+                minlength="8"
+                maxlength="120"
+                required
+                aria-describedby="address-error"
+              />
+              <span class="field-error" id="address-error"></span>
+            </label>
+            <label
+              >Describe lo que necesitas
+              <textarea
+                name="detail"
+                rows="4"
+                placeholder="Cuéntanos brevemente qué problema necesitas resolver"
+                minlength="15"
+                maxlength="500"
+                required
+                aria-describedby="detail-error"
+              ></textarea>
+              <span class="field-error" id="detail-error"></span>
+            </label>
+            <fieldset class="payment-methods" aria-describedby="payment-error">
+              <legend>Método de pago</legend>
+              <div class="payment-options" id="payment-options">
+                <p class="load-state">Cargando métodos de pago…</p>
+              </div>
+              <span class="field-error" id="payment-error"></span>
+            </fieldset>
+            <div class="booking-summary" aria-live="polite">
+              <p class="booking-summary-title">Resumen antes de enviar</p>
+              <dl>
+                <div>
+                  <dt>Servicio</dt>
+                  <dd id="summary-service">—</dd>
+                </div>
+                <div>
+                  <dt>Método de pago</dt>
+                  <dd id="summary-payment">Sin seleccionar</dd>
+                </div>
+                <div class="booking-summary-total">
+                  <dt>Tarifa fija</dt>
+                  <dd id="booking-rate">—</dd>
+                </div>
+              </dl>
+              <small id="payment-note">El precio no se puede modificar.</small>
+            </div>
+            <button class="button register-submit" type="submit" disabled>
+              Solicitar servicio
+            </button>
+            <p id="booking-message" class="form-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </aside>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-bottom">
+          <span>© <span id="year"></span> HogarFix. Todos los derechos reservados.</span
+          ><a href="buscar.html">Volver a buscar profesionales</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
