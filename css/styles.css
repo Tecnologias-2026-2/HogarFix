@@ -914,6 +914,61 @@ h2 {
   border-color: var(--blue);
   outline: 3px solid rgb(21 93 252 / 12%);
 }
+.register-card .password-field {
+  position: relative;
+  display: block;
+}
+.register-card .password-field input {
+  padding-right: 48px;
+}
+.register-card .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #45556c;
+  cursor: pointer;
+}
+.register-card .password-toggle:focus-visible {
+  outline: 3px solid rgb(21 93 252 / 30%);
+}
+.password-rules {
+  display: grid;
+  gap: 6px;
+  margin: -8px 0 0;
+  padding: 0;
+  color: #526179;
+  font-size: 12px;
+  list-style: none;
+}
+.password-rules li::before {
+  margin-right: 8px;
+  color: #7b8798;
+  content: "○";
+}
+.password-rules li.is-ok::before {
+  color: #16834b;
+  content: "✓";
+}
+.password-match {
+  margin: -8px 0 0;
+  color: #526179;
+  font-size: 12px;
+}
+.password-match.is-ok {
+  color: #16834b;
+}
+.password-match.is-error {
+  color: #b42318;
+}
 .terms-row {
   display: flex;
   align-items: flex-start;
@@ -2184,6 +2239,9 @@ h2 {
 .provider-profile-form small {
   margin-top: -10px;
   color: #90a1b9;
+}
+.error-copy {
+  color: #b42318;
 }
 .provider-profile-form .form-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));

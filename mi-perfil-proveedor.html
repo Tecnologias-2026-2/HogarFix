@@ -33,8 +33,8 @@
           ><a href="mensajes-proveedor.html">Mensajes</a>
         </nav>
         <div class="nav-actions client-account">
-          <span class="client-avatar">S</span
-          ><span class="client-name" id="app-user-name">Sebastian</span
+          <span class="client-avatar" id="provider-avatar-initial"></span
+          ><span class="client-name" id="app-user-name"></span
           ><button class="button button-small logout-button" id="logout-button" type="button">
             Cerrar sesión
           </button>
@@ -48,45 +48,57 @@
       <section class="flow-panel profile-summary-panel">
         <img class="profile-large-avatar" src="assets/provider-avatar.svg" alt="" />
         <div>
-          <h2 id="provider-profile-name">Sebastián Torres</h2>
-          <p>★★★★★ 4.9 · 82 reseñas · 356 trabajos</p>
-          <span class="verified-label">✓ Verificado</span>
+          <h2 id="provider-profile-name" hidden></h2>
+          <p id="provider-validation-status" aria-live="polite">Validación automática pendiente.</p>
+          <span id="provider-approval-status" class="muted-copy" aria-live="polite">
+            Pendiente de revisión administrativa.
+          </span>
+          <p id="provider-eligibility-status" class="muted-copy" aria-live="polite">
+            Comprobando si la cuenta está habilitada para ofrecer servicios.
+          </p>
         </div>
       </section>
-      <form id="provider-profile-form" class="flow-panel provider-profile-form">
+      <form id="provider-personal-form" class="flow-panel provider-profile-form">
         <h2>Información personal</h2>
-        <label>Nombre completo<input name="name" value="Sebastián Torres" required /></label
-        ><label
-          >Descripción / Experiencia<textarea name="bio" rows="3">
-Más de 5 años de experiencia en servicios del hogar. Trabajo con calidad y puntualidad garantizada.</textarea
-          >
+        <div class="form-row">
+          <label>Nombre<input name="firstName" autocomplete="given-name" required /></label
+          ><label>Apellido<input name="lastName" autocomplete="family-name" required /></label>
+        </div>
+        <div class="form-row">
+          <label>Correo electrónico<input id="provider-profile-email" type="email" disabled /></label
+          ><label>Teléfono<input name="phone" type="tel" autocomplete="tel" /></label>
+        </div>
+        <div class="form-actions">
+          <button class="button" type="submit">Guardar datos personales</button>
+        </div>
+        <p id="provider-personal-message" class="muted-copy" aria-live="polite"></p>
+      </form>
+      <form id="provider-profile-form" class="flow-panel provider-profile-form">
+        <h2>Perfil profesional</h2>
+        <label
+          >Descripción profesional<textarea name="bio" rows="3" maxlength="1000"></textarea>
         </label>
         <div class="form-row">
-          <label>Teléfono<input name="phone" value="+57 300 123 45 67" /></label
-          ><label
-            >Zona de trabajo<input
-              name="zone"
-              value="Bogotá, Colombia | Atiende en: 0-15 km" /></label
-          ><label>Tarifa base<input name="rate" type="number" value="95000" /></label
-          ><label
-            >Disponibilidad<input name="availability" value="Lun - Sáb, 8:00 am – 6:00 pm"
+          <label
+            >Años de experiencia<input
+              name="experienceYears"
+              type="number"
+              min="0"
+              max="70"
+              step="1"
           /></label>
+          <label>Zona de cobertura<input name="coverageZone" maxlength="160" /></label>
+          <label>Disponibilidad<input name="availability" maxlength="200" /></label>
         </div>
-        <small>Precio por servicio en COP</small>
         <h2>Servicios que ofrezco</h2>
         <div class="service-tags">
-          <label><input type="checkbox" name="services" value="Plomería" checked /> Plomería</label
+          <label><input type="checkbox" name="services" value="plomeria" /> Plomería</label
           ><label
-            ><input type="checkbox" name="services" value="Electricidad" checked />
+            ><input type="checkbox" name="services" value="electricidad" />
             Electricidad</label
-          ><label><input type="checkbox" name="services" value="Jardinería" /> Jardinería</label
+          ><label><input type="checkbox" name="services" value="jardineria" /> Jardinería</label
           ><label
-            ><input type="checkbox" name="services" value="Limpieza General" /> Limpieza
-            General</label
-          ><label><input type="checkbox" name="services" value="Pintura" /> Pintura</label
-          ><label><input type="checkbox" name="services" value="Reparaciones" /> Reparaciones</label
-          ><label
-            ><input type="checkbox" name="services" value="Mantenimiento" /> Mantenimiento</label
+            ><input type="checkbox" name="services" value="aseo-general" /> Aseo general</label
           >
         </div>
         <div class="form-actions">
@@ -100,7 +112,7 @@ Más de 5 años de experiencia en servicios del hogar. Trabajo con calidad y pun
       <div class="container">
         <div class="footer-bottom">
           <span>© <span id="year"></span> HogarFix. Todos los derechos reservados.</span
-          ><span>Demostración del proyecto</span>
+          ><span>Perfil conectado a HogarFix</span>
         </div>
       </div>
     </footer>

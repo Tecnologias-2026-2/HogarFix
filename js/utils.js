@@ -1,4 +1,5 @@
 // Utilidades compartidas por los módulos de pantalla.
+export { getCurrentProfile } from "./services/auth.js";
 
 export function escapeHTML(value) {
   return String(value ?? "").replace(
@@ -50,14 +51,6 @@ export function statusClass(status = "") {
 export function stars(rating) {
   const full = Math.round(Number(rating) || 0);
   return "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full));
-}
-
-export function getSession() {
-  try {
-    return JSON.parse(sessionStorage.getItem("hogarfix.session.v1") || "null");
-  } catch {
-    return null;
-  }
 }
 
 // Estados de carga y error reutilizables.

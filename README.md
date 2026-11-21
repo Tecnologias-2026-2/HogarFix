@@ -42,7 +42,7 @@ Los clientes pueden utilizar la plataforma desde un dispositivo web o móvil par
 
 **RF02. Inicio de sesión:** El sistema debe permitir iniciar sesión mediante correo electrónico o número celular y contraseña.
 
-**RF03. Recuperación de contraseña:** El sistema debe permitir recuperar la contraseña mediante un código de verificación enviado al correo registrado.
+**RF03. Recuperación de contraseña:** El sistema debe permitir solicitar por correo instrucciones para restablecer la contraseña mediante Firebase Authentication.
 
 **RF04. Consulta de categorías y tarifas:** El sistema debe mostrar las categorías de servicios para el hogar y sus respectivas tarifas fijas.
 
@@ -258,8 +258,8 @@ erDiagram
 | Capa | Tecnología |
 | --- | --- |
 | Frontend | HTML5, CSS3 (diseño responsive con media queries), JavaScript (módulos ES) |
-| Backend | Node.js + Express (en desarrollo) |
-| Base de datos y autenticación | Firebase Firestore y Firebase Authentication (en desarrollo) |
+| Backend | Node.js + Express (autenticación y gestión de perfiles implementadas; solicitudes pendientes) |
+| Base de datos y autenticación | Firebase Authentication y perfiles en Cloud Firestore; datos de la plataforma aún en modo demostración |
 | Diseño | Figma |
 | Control de versiones y publicación | Git, GitHub y GitHub Pages |
 | Formato de código | Prettier (`.prettierrc.json`) |
@@ -271,17 +271,24 @@ flowchart LR
   subgraph Navegador
     HTML[Pantallas HTML] --> C[js/components/*]
     C --> API[js/services/api.js]
+    C --> AUTHUI[js/services/auth.js]
   end
-  API -- "API_BASE_URL vacía" --> DEMO[(data/data.js + localStorage)]
-  API -- "API_BASE_URL definida" --> EXP[Backend Express]
-  EXP --> FS[(Firestore)]
-  EXP --> AUTH[Firebase Auth]
+  API -- "PROFILE_API_BASE_URL definida" --> EXP[Backend Express: perfiles]
+  API -- "REQUESTS_API_BASE_URL definida" --> EXP
+  API -- "solicitudes sin URL" --> DEMO[(data/data.js + localStorage)]
+  API -- "categorías y proveedores" --> DEMO
+  EXP -- "Firebase Admin: verificación de ID token" --> AUTH[Firebase Auth]
+  EXP -- "datos personales propios" --> USERS[(Firestore: users/{uid})]
+  EXP -- "perfil profesional y estados" --> PROVIDERPROFILES[(Firestore: providerProfiles/{uid})]
+  AUTHUI --> AUTH
+  AUTHUI --> USERS[(Firestore: users/{uid})]
 ```
 
 - **Frontend:** cada pantalla es un archivo HTML que carga `js/main.js`. `main.js` importa los módulos de `js/components/`, y cada módulo actúa solo si encuentra sus elementos en la página.
-- **Capa de servicios (`js/services/api.js`):** es el único punto por donde el frontend pide o envía datos. Si `js/config.js` no tiene URL de backend, funciona en **modo demostración** con `data/data.js` y `localStorage`. Cuando el backend esté publicado, basta con poner su URL en `API_BASE_URL`; las pantallas no cambian.
-- **Backend:** API REST en Express que valida los datos, aplica las reglas de negocio (por ejemplo, que la tarifa venga de la categoría) y se comunica con Firestore.
-- **Base de datos:** Firestore guarda usuarios, proveedores, categorías, solicitudes, calificaciones, mensajes y notificaciones (ver sección 6).
+- **Autenticación (`js/services/auth.js`):** el registro y el inicio de sesión usan Firebase Authentication. El perfil se guarda y consulta en `users/{uid}` con `createdAt`, `email`, `firstName`, `lastName` y `role`. La sesión persistente pertenece a Firebase Authentication.
+- **Capa de servicios (`js/services/api.js`):** categorías y proveedores siguen en **modo demostración** con `data/data.js`. Las solicitudes usan `localStorage` mientras `REQUESTS_API_BASE_URL` esté vacía; al configurarla usan únicamente el backend. La gestión de perfiles requiere `PROFILE_API_BASE_URL` y usa rutas REST protegidas, sin alternativa local.
+- **Backend (`backend/`):** Express expone `GET /api/health`, rutas de identidad, consulta/actualización de perfiles y elegibilidad. Firebase Admin verifica firma, vencimiento y revocación del ID token; el rol se obtiene del perfil `users/{uid}` usando el UID verificado. Las operaciones de solicitudes y demás datos de negocio siguen pendientes.
+- **Firebase:** Firebase Authentication gestiona las cuentas y la sesión; Firestore almacena datos personales en `users/{uid}` y datos profesionales/controlados por servidor en `providerProfiles/{uid}`. El backend usa Firebase Admin con Application Default Credentials, que omite las reglas de Firestore; por ello las rutas validan explícitamente sus campos y permisos.
 
 ### 7.3 Estructura de carpetas
 
@@ -290,6 +297,7 @@ HogarFix/
 ├── index.html                 Página pública (landing)
 ├── login.html, registro.html  Acceso
 ├── app.html                   Panel del cliente
+├── mi-perfil-cliente.html     Perfil editable del cliente
 ├── buscar.html                Catálogo de categorías y búsqueda de proveedores
 ├── perfil-proveedor.html      Perfil del proveedor y formulario de solicitud
 ├── reserva.html               Resumen de contratación y confirmación
@@ -308,9 +316,12 @@ HogarFix/
 │   └── schema.json            Esquema de los formularios y entidades
 ├── js/
 │   ├── config.js              URL del backend (vacía = modo demostración)
-│   ├── main.js                Navegación, accesibilidad, sesión y pantallas del proveedor
+│   ├── firebase-config.js     Firebase web SDK (Authentication y Firestore)
+│   ├── main.js                Navegación, accesibilidad y sesión
 │   ├── utils.js               Formato de precios y fechas, estados de carga y error
-│   ├── services/api.js        Capa de servicios (backend o demostración)
+│   ├── services/
+│   │   ├── api.js             Capa de servicios (backend o demostración)
+│   │   └── auth.js            Firebase Authentication y perfiles de usuario
 │   └── components/
 │       ├── catalogo.js        Categorías y tarifas fijas (ISSUE 10)
 │       ├── proveedores.js     Listado y perfil de proveedores (ISSUE 12)
@@ -318,7 +329,23 @@ HogarFix/
 │       ├── resumen.js         Resumen y confirmación de contratación (ISSUE 13)
 │       ├── historial.js       Historial con filtros por estado y fecha (ISSUE 14)
 │       ├── form-data.js       Lectura y validación de formularios contra schema.json
-│       └── login.js, registro.js, buscar.js, chat.js, perfil-proveedor.js
+│       └── login.js, registro.js, buscar.js, chat.js, perfil-cliente.js, perfil-proveedor.js
+├── backend/
+│   ├── README.md              Alcance y responsabilidades del backend
+│   ├── package.json           Dependencias y comando de inicio
+│   ├── package-lock.json      Versiones bloqueadas de dependencias
+│   ├── test/
+│   │   ├── auth-middleware.test.js Pruebas de autenticación y roles
+│   │   └── profile-routes.test.js Pruebas de perfiles y aprobación
+│   └── src/
+│       ├── app.js              Aplicación Express y montaje de rutas
+│       ├── config/firebase-admin.js Inicialización diferida de Firebase Admin
+│       ├── middlewares/auth.js Verificación de token y rol
+│       ├── routes/access.js    Rutas privadas Cliente/Proveedor
+│       ├── routes/profile.js   Consulta y actualización de perfiles propios
+│       ├── routes/admin.js     Aprobación administrativa de proveedores
+│       ├── services/           Validación y persistencia de perfiles
+│       └── server.js           Inicio del servidor y configuración del puerto
 ├── .github/workflows/pages.yml  Publicación automática en GitHub Pages
 ├── .env.example               Variables de entorno de ejemplo
 └── .prettierrc.json           Formato común del código
@@ -326,7 +353,7 @@ HogarFix/
 
 ### 7.4 Endpoints principales
 
-Contrato que consume el frontend desde `js/services/api.js`. Todas las rutas cuelgan de `API_BASE_URL` y responden JSON. Las rutas de solicitudes requieren el encabezado `Authorization: Bearer <token>` del usuario autenticado.
+Las rutas de identidad `GET /api/client/me` y `GET /api/provider/me`, la gestión de perfiles y la elegibilidad de proveedores están protegidas por Firebase Admin. `GET /api/health` sigue siendo pública. Las pantallas de perfil requieren configurar `PROFILE_API_BASE_URL`; no guardan datos personales ni profesionales en `localStorage`.
 
 | Método | Ruta | Uso | Respuesta |
 | --- | --- | --- | --- |
@@ -337,12 +364,16 @@ Contrato que consume el frontend desde `js/services/api.js`. Todas las rutas cue
 | GET | `/solicitudes/:id` | Detalle de una solicitud | `{ …solicitud }` |
 | POST | `/solicitudes` | Crear solicitud `{ proveedorId, categoriaId, date, time, address, detail }` | Solicitud creada, estado `Pendiente` |
 | PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud `Aceptada` | Solicitud con estado `Confirmada` |
+| GET/PATCH | `/api/profile/me` | Consultar/actualizar datos personales propios | Perfil personal |
+| GET/PATCH | `/api/provider/profile/me` | Consultar/actualizar datos profesionales propios | Perfil y estados de validación/aprobación |
+| GET | `/api/provider/eligibility` | Verificar validación, aprobación y cuenta activa | `{ eligible, accountActive, reasons }` |
+| PATCH | `/api/admin/providers/:uid/approval` | Decisión administrativa (custom claim `admin: true`) | Estado de aprobación actualizado |
 
 Reglas importantes para el backend:
 
 - `POST /solicitudes` **no recibe precio**: el servidor copia la tarifa de la categoría (RNF04).
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
-- Pendientes del equipo de backend: autenticación, recuperación de contraseña, gestión de solicitudes del proveedor, calificaciones, notificaciones e ingresos.
+- Las rutas de aprobación requieren custom claim administrativo asignado fuera de la API. Las operaciones de solicitudes, calificaciones, notificaciones e ingresos aún no están conectadas a estos perfiles.
 
 ### 7.5 Funcionalidades del frontend
 
@@ -382,19 +413,24 @@ Alternativa sin VS Code: `npx serve .` o `python -m http.server 5500` desde la c
 
 ### Conectar el backend
 
-Cuando el backend esté disponible, edita `js/config.js`:
+Cuando el backend de perfiles esté disponible, edita `js/config.js`:
 
 ```js
-export const API_BASE_URL = "http://localhost:3000/api"; // o la URL publicada
+export const PROFILE_API_BASE_URL = "http://localhost:3000/api"; // o la URL publicada
 ```
+
+`REQUESTS_API_BASE_URL` permanece vacía hasta que se implementen las rutas de solicitudes; configurarla ahora no activa las solicitudes automáticamente ni hace que categorías o proveedores consulten rutas inexistentes.
+Configura `backend/.env` a partir de `backend/.env.example`, incluidas `FIREBASE_PROJECT_ID` y `CORS_ORIGINS`. Firebase Admin requiere Application Default Credentials. Las reglas de Firestore desplegadas no se modifican; el backend valida sus propias escrituras porque Admin SDK omite dichas reglas.
+
+Los perfiles se guardan en `users/{uid}` (datos personales) y `providerProfiles/{uid}` (datos profesionales y estados controlados por servidor). Los usuarios no pueden cambiar correo, rol, UID, validación automática ni aprobación desde las rutas de perfil. Una edición profesional reinicia la aprobación a `pending`; el perfil completo puede superar la validación automática, pero solo una cuenta con claim administrativo puede aprobarlo. Foto y certificados quedan pendientes de configurar Firebase Storage.
 
 ### Modo demostración
 
-Mientras `API_BASE_URL` esté vacía, las cuentas, la sesión, las solicitudes y los mensajes se guardan en el `localStorage`/`sessionStorage` del navegador. Solo funcionan en el mismo navegador y dispositivo donde se crearon y no se comparten con otros usuarios.
+Mientras `PROFILE_API_BASE_URL` esté vacía, las pantallas de perfil muestran un error de configuración y no guardan cambios localmente. Mientras `REQUESTS_API_BASE_URL` esté vacía, las solicitudes mantienen su modo de demostración con `localStorage`; categorías y proveedores siguen usando datos de demostración. Las cuentas y la sesión se gestionan con Firebase Authentication. La persistencia local de solicitudes y mensajes no ofrece sincronización ni controles de acceso de servidor.
 
 ## 🌍 9. Despliegue
 
-El frontend se publica en **GitHub Pages** con el flujo `.github/workflows/pages.yml`, que se ejecuta en cada push a `main` (o a mano desde la pestaña *Actions*).
+El frontend se publica en **GitHub Pages** con el flujo `.github/workflows/pages.yml`, que se ejecuta en cada push a `main` (o a mano desde la pestaña *Actions*). El workflow conserva las rutas actuales del frontend y no publica la carpeta `backend/`.
 
 Configuración inicial (una sola vez, la hace quien administra el repositorio): **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 
@@ -403,15 +439,21 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 ## 🔒 10. Seguridad y archivos sensibles
 
 - `.gitignore` excluye `.env` y sus variantes; usa `.env.example` como plantilla y nunca subas el `.env` real.
-- Las contraseñas de las cuentas de demostración no se guardan en texto plano: se derivan con PBKDF2 (Web Crypto) antes de guardarlas en el navegador.
+- Las contraseñas se gestionan mediante Firebase Authentication; Firestore solo recibe los campos del perfil y nunca la contraseña, su confirmación ni hashes.
 - La configuración web de Firebase (`apiKey`, `projectId`…) es pública por diseño, pero el acceso a los datos debe protegerse con **reglas de seguridad de Firestore** por usuario y rol.
-- Las claves privadas del backend (cuentas de servicio de Firebase) deben ir solo en variables de entorno del servidor, nunca en el repositorio.
-- Lista de revisión antes de cada entrega: sin archivos `.env`, sin credenciales de cuentas de servicio y sin archivos de prueba (`prueba.html`, `prueba-firebase.js`) en `main`.
+- Firebase Admin usa Application Default Credentials y `FIREBASE_PROJECT_ID`; configura ADC en el entorno de ejecución. Las credenciales privadas deben permanecer fuera del repositorio y no subirse a GitHub.
+- El control de acceso de las pantallas mejora la navegación, pero la autorización de los datos debe imponerse con reglas de Firestore. La aprobación de proveedores aún no está implementada.
+- Lista de revisión antes de cada entrega: sin archivos `.env` ni credenciales de cuentas de servicio; los archivos de prueba `prueba.html` y `js/prueba-firebase.js` se excluyen del artefacto de GitHub Pages.
 
 ## 📌 11. Estado del proyecto
 
+Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas como `GitHub #...` indican el número real del Issue cuando la numeración difiere.
+
 | Issue | Tema | Estado |
 | --- | --- | --- |
+| 01 | Estructura general del proyecto | ✅ Estructura y documentación base |
+| 02 | Servidor Node.js + Express | ✅ Servidor y `GET /api/health`; rutas de negocio pendientes |
+| 03-07 | Autenticación, autorización y perfiles | Autenticación web y middleware backend de roles implementados; rutas de negocio, edición de perfiles y aprobación de proveedores pendientes |
 | 08 | Adaptación del diseño a HTML, CSS y JS | ✅ Código formateado y organizado, íconos de categorías corregidos |
 | 09 | Diseño responsive | ✅ Probado en celular, tablet y escritorio |
 | 10 | Catálogo de categorías y tarifas | ✅ Desde la capa de servicios |
@@ -419,7 +461,10 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 | 12 | Visualización de proveedores | ✅ Desde la capa de servicios, con carga y error |
 | 13 | Confirmación y resumen de contratación | ✅ |
 | 14 | Historial de servicios del cliente | ✅ Filtros por estado y fecha |
+| Autenticación | Registro, inicio y cierre de sesión con Firebase; perfil `users/{uid}` | ✅ Etapa 1 |
+| Administración de proveedores | Estados y aprobación administrativa segura | Pendiente de definir mecanismo y reglas |
+| GitHub #11 | Middleware de autenticación y autorización | ✅ Verificación de ID token y guards Cliente/Proveedor |
 | 28 | Documentación y entrega final | ✅ Este README |
-| 02-07, 15-27 | Backend, Firebase, autenticación, calificaciones, notificaciones | En desarrollo por el equipo de backend y base de datos |
+| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | En desarrollo |
 
-Mientras el backend no esté publicado, el frontend funciona completo en modo demostración y queda listo para conectarse cambiando una sola línea en `js/config.js`.
+Las funciones de datos que todavía usan el modo de demostración no se migran a Firebase por la etapa 1. La integración con un backend REST sigue siendo opcional y no es requisito para usar Authentication y los perfiles.

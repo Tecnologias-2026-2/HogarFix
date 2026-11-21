@@ -1,7 +1,11 @@
 // ISSUE 11. Formulario de solicitud de servicios (perfil-proveedor.html).
-import { getCategorias, createSolicitud } from "../services/api.js";
+import {
+  getCategorias,
+  createSolicitud,
+  USE_REQUESTS_BACKEND,
+} from "../services/api.js";
 import { readSchema, validateAgainstSchema } from "./form-data.js";
-import { formatCOP, todayISO } from "../utils.js";
+import { escapeHTML, formatCOP, todayISO } from "../utils.js";
 
 const form = document.querySelector("#booking-form");
 
@@ -12,6 +16,20 @@ if (form) {
   const rateLabel = document.querySelector("#booking-rate");
   let categorias = [];
   let proveedor = null;
+  let pendingPayloadSignature = "";
+  let pendingIdempotencyKey = "";
+
+  const getIdempotencyKey = (payload) => {
+    const signature = JSON.stringify(payload);
+    if (signature !== pendingPayloadSignature) {
+      if (!globalThis.crypto?.randomUUID) {
+        throw new Error("Este navegador no permite generar una clave segura para la solicitud.");
+      }
+      pendingPayloadSignature = signature;
+      pendingIdempotencyKey = globalThis.crypto.randomUUID();
+    }
+    return pendingIdempotencyKey;
+  };
 
   // Solo se pueden pedir fechas desde hoy y hasta 60 días después.
   fields.date.min = todayISO();
@@ -19,15 +37,23 @@ if (form) {
 
   const showRate = () => {
     const categoria = categorias.find((item) => item.id === fields.service.value);
-    rateLabel.textContent = categoria ? formatCOP(categoria.tarifa) : "—";
+    rateLabel.textContent = categoria
+      ? formatCOP(categoria.fixedPriceCOP ?? categoria.tarifa)
+      : "—";
   };
 
   // Las opciones salen del catálogo y se limitan a lo que ofrece el profesional.
   const fillServices = () => {
     if (!categorias.length || !proveedor) return;
-    const offered = categorias.filter((item) => proveedor.categorias.includes(item.id));
+    const offeredCategoryIds =
+      proveedor.categoryIds || proveedor.categorias || proveedor.services;
+    if (!Array.isArray(offeredCategoryIds)) return;
+    const offered = categorias.filter((item) => offeredCategoryIds.includes(item.id));
     fields.service.innerHTML = offered
-      .map((item) => `<option value="${item.id}">${item.nombre}</option>`)
+      .map(
+        (item) =>
+          `<option value="${escapeHTML(item.id)}">${escapeHTML(item.nombre || item.name)}</option>`,
+      )
       .join("");
     showRate();
     submit.disabled = false;
@@ -118,14 +144,30 @@ if (form) {
     submit.disabled = true;
     submit.textContent = "Enviando solicitud…";
     try {
-      const solicitud = await createSolicitud({
-        proveedorId: proveedor.id,
-        categoriaId: values.service,
+      const requestValues = {
+        providerCatalogId: proveedor?.providerCatalogId,
+        categoryId: values.service,
         date: values.date,
         time: values.time,
         address: values.address,
         detail: values.detail,
+      };
+      const solicitud = await createSolicitud({
+        proveedorId: proveedor.id,
+        categoriaId: values.service,
+        providerCatalogId: requestValues.providerCatalogId,
+        categoryId: requestValues.categoryId,
+        date: values.date,
+        time: values.time,
+        address: values.address,
+        detail: values.detail,
+        idempotencyKey:
+          USE_REQUESTS_BACKEND && requestValues.providerCatalogId
+            ? getIdempotencyKey(requestValues)
+            : undefined,
       });
+      pendingPayloadSignature = "";
+      pendingIdempotencyKey = "";
       message.classList.add("is-success");
       message.textContent = "¡Solicitud enviada! Abriendo el resumen…";
       location.href = `reserva.html?id=${encodeURIComponent(solicitud.id)}`;

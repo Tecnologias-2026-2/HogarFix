@@ -31,11 +31,12 @@
         </button>
         <nav id="client-nav" class="primary-nav client-nav" aria-label="Navegación del cliente">
           <a href="app.html" aria-current="page">Inicio</a><a href="buscar.html">Buscar</a
-          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a>
+          ><a href="solicitudes.html">Mis Solicitudes</a><a href="chat.html">Chat</a
+          ><a href="mi-perfil-cliente.html">Mi Perfil</a>
         </nav>
         <div class="nav-actions client-account">
           <span class="client-avatar"><img src="assets/figma-search-user.svg" alt="" /></span
-          ><span class="client-name" id="app-user-name">Samara</span
+          ><span class="client-name" id="app-user-name"></span
           ><button class="account-menu-button" type="button" aria-label="Opciones de cuenta">
             ⌄</button
           ><button class="button button-small logout-button" id="logout-button" type="button">
@@ -48,7 +49,7 @@
       <section class="client-welcome">
         <div class="client-dashboard-inner">
           <p class="client-location">📍 Bogotá, Colombia</p>
-          <h1>Hola, <span id="client-first-name">Samara</span> 👋</h1>
+          <h1>Hola, <span id="client-first-name"></span> 👋</h1>
           <p class="client-welcome-subtitle">¿Qué servicio necesitas hoy?</p>
           <form class="dashboard-search" id="dashboard-search" action="buscar.html" role="search">
             <label class="visually-hidden" for="dashboard-query">Buscar un servicio</label
@@ -126,6 +127,9 @@
             ><a href="chat.html"
               ><span>▢</span>
               <div><strong>Mensajes</strong><small>Chat con proveedores</small></div></a
+            ><a href="mi-perfil-cliente.html"
+              ><span>◉</span>
+              <div><strong>Mi perfil</strong><small>Actualiza tus datos personales</small></div></a
             >
           </nav>
         </section>
