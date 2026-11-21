@@ -1,7 +1,13 @@
-// ISSUE 11 y #32 (métodos de pago). Formulario de solicitud de servicios (perfil-proveedor.html).
-import { getCategorias, getMetodosPago, getPerfil, createSolicitud } from "../services/api.js";
+// ISSUE 11 y #32 (métodos de pago demo). Formulario de solicitud (perfil-proveedor.html).
+import {
+  getCategorias,
+  getMetodosPago,
+  createSolicitud,
+  USE_REQUESTS_BACKEND,
+} from "../services/api.js";
 import { readSchema, validateAgainstSchema } from "./form-data.js";
-import { escapeHTML, formatCOP, getSession, todayISO } from "../utils.js";
+import { escapeHTML, formatCOP, todayISO } from "../utils.js";
+import { getAuthState } from "../services/auth.js";
 
 const form = document.querySelector("#booking-form");
 const DRAFT_KEY = "hogarfix.booking-draft.v1";
@@ -16,13 +22,24 @@ if (form) {
   let categorias = [];
   let metodos = [];
   let proveedor = null;
-  let preferredPayment = "";
+  let pendingPayloadSignature = "";
+  let pendingIdempotencyKey = "";
+
+  const getIdempotencyKey = (payload) => {
+    const signature = JSON.stringify(payload);
+    if (signature !== pendingPayloadSignature) {
+      if (!globalThis.crypto?.randomUUID) {
+        throw new Error("Este navegador no permite generar una clave segura para la solicitud.");
+      }
+      pendingPayloadSignature = signature;
+      pendingIdempotencyKey = globalThis.crypto.randomUUID();
+    }
+    return pendingIdempotencyKey;
+  };
 
   // Solo se pueden pedir fechas desde hoy y hasta 60 días después.
   fields.date.min = todayISO();
   fields.date.max = todayISO(60);
-
-  /* ---------- Borrador: la selección se conserva si recargas o vuelves a la página ---------- */
 
   const draftKey = () => `${DRAFT_KEY}:${proveedor?.id || ""}`;
   const readDraft = () => {
@@ -38,51 +55,79 @@ if (form) {
       const data = Object.fromEntries(
         ["service", "date", "time", "address", "detail"].map((name) => [name, fields[name].value]),
       );
-      data.payment = form.querySelector('[name="payment"]:checked')?.value || "";
+      if (!USE_REQUESTS_BACKEND) {
+        data.payment = form.querySelector('[name="payment"]:checked')?.value || "";
+      }
       sessionStorage.setItem(draftKey(), JSON.stringify(data));
     } catch {
-      /* El borrador es solo una comodidad. */
+      // Draft persistence is optional and contains no authentication data.
     }
   };
   const clearDraft = () => {
     try {
       sessionStorage.removeItem(draftKey());
     } catch {
-      /* Nada que limpiar. */
+      // Ignore unavailable session storage after a successful submission.
     }
   };
-
-  /* ---------- Resumen antes de enviar ---------- */
 
   const updateSummary = () => {
     const categoria = categorias.find((item) => item.id === fields.service.value);
     const metodo = metodos.find(
       (item) => item.id === form.querySelector('[name="payment"]:checked')?.value,
     );
-    rateLabel.textContent = categoria ? formatCOP(categoria.tarifa) : "—";
-    document.querySelector("#summary-service").textContent = categoria?.nombre || "—";
-    document.querySelector("#summary-payment").textContent = metodo?.nombre || "Sin seleccionar";
-    paymentNote.textContent = !metodo
-      ? "El precio no se puede modificar."
-      : metodo.tipo === "contra-entrega"
-        ? "Pagarás en efectivo al profesional cuando termine el servicio. El precio no se puede modificar."
-        : "No se hará ningún cobro ahora. El pago en línea se habilitará cuando HogarFix integre la pasarela de pagos.";
+    rateLabel.textContent = categoria
+      ? formatCOP(categoria.fixedPriceCOP ?? categoria.tarifa)
+      : "—";
+    const serviceSummary = document.querySelector("#summary-service");
+    const paymentSummary = document.querySelector("#summary-payment");
+    if (serviceSummary) serviceSummary.textContent = categoria?.nombre || categoria?.name || "—";
+    if (paymentSummary) {
+      paymentSummary.textContent = USE_REQUESTS_BACKEND
+        ? "No disponible en el backend"
+        : metodo?.nombre || "Sin seleccionar";
+    }
+    if (paymentNote) {
+      paymentNote.textContent = USE_REQUESTS_BACKEND
+        ? "El backend todavía no procesa pagos; no se enviarán datos de pago."
+        : !metodo
+          ? "El precio no se puede modificar."
+          : metodo.tipo === "contra-entrega"
+            ? "Pago informativo al finalizar; no se procesa ningún cobro."
+            : "No se hará ningún cobro. La pasarela de pagos aún no está integrada.";
+    }
   };
 
-  const ready = () => {
-    if (!categorias.length || !metodos.length || !proveedor) return;
-    const session = getSession();
-    if (session?.role === "Proveedor") {
+  const ready = async () => {
+    if (!categorias.length || (!USE_REQUESTS_BACKEND && !metodos.length) || !proveedor) return;
+    const { user, profile, error } = await getAuthState();
+    if (error || !user || !profile) {
+      message.textContent = "Inicia sesión con una cuenta de cliente para solicitar un servicio.";
+      submit.disabled = true;
+      return;
+    }
+    if (profile.role !== "Cliente") {
       form.innerHTML =
         '<p class="empty-state">Esta es la vista que ven los clientes. Solo una cuenta de cliente puede solicitar servicios.</p>';
       return;
     }
-    // Las opciones salen del catálogo y se limitan a lo que ofrece el profesional.
-    const offered = categorias.filter((item) => proveedor.categorias.includes(item.id));
+    const offeredCategoryIds =
+      proveedor.categoryIds || proveedor.categoryIdsByCatalog || proveedor.categorias || proveedor.services;
+    if (!Array.isArray(offeredCategoryIds)) {
+      message.textContent = "No se pudo verificar el catálogo de servicios de este profesional.";
+      return;
+    }
+    const offered = categorias.filter((item) => offeredCategoryIds.includes(item.id));
     fields.service.innerHTML = offered
-      .map((item) => `<option value="${escapeHTML(item.id)}">${escapeHTML(item.nombre)}</option>`)
+      .map(
+        (item) =>
+          `<option value="${escapeHTML(item.id)}">${escapeHTML(item.nombre || item.name)}</option>`,
+      )
       .join("");
-    paymentBox.innerHTML = metodos
+    paymentBox.hidden = USE_REQUESTS_BACKEND;
+    paymentBox.innerHTML = USE_REQUESTS_BACKEND
+      ? ""
+      : metodos
       .map(
         (item) => `
         <label class="payment-option">
@@ -101,7 +146,6 @@ if (form) {
       }),
     );
 
-    // Restaurar borrador o, si no hay, el método preferido del perfil.
     const draft = readDraft();
     if (draft) {
       ["service", "date", "time", "address", "detail"].forEach((name) => {
@@ -109,7 +153,7 @@ if (form) {
           fields[name].value = draft[name];
       });
     }
-    const paymentToSelect = draft?.payment || preferredPayment;
+    const paymentToSelect = draft?.payment || "";
     const radio = paymentBox.querySelector(`[value="${CSS.escape(paymentToSelect || "")}"]`);
     if (radio) radio.checked = true;
     updateSummary();
@@ -118,22 +162,16 @@ if (form) {
 
   document.addEventListener("hogarfix:proveedor", (event) => {
     proveedor = event.detail;
-    ready();
+    ready().catch((error) => {
+      message.textContent = error.message || "No se pudo validar la sesión.";
+    });
   });
 
-  Promise.all([
-    getCategorias(),
-    getMetodosPago(),
-    getPerfil()
-      .then((perfil) => perfil)
-      .catch(() => ({})),
-  ])
-    .then(([items, pagos, perfil]) => {
+  Promise.all([getCategorias(), USE_REQUESTS_BACKEND ? Promise.resolve([]) : getMetodosPago()])
+    .then(([items, pagos]) => {
       categorias = items;
       metodos = pagos;
-      preferredPayment = perfil.preferredPayment || "";
-      if (!fields.address.value && perfil.address) fields.address.value = perfil.address;
-      ready();
+      return ready();
     })
     .catch((error) => {
       fields.service.innerHTML = '<option value="">No disponible</option>';
@@ -141,7 +179,10 @@ if (form) {
       message.textContent = `${error.message} Recarga la página para intentarlo de nuevo.`;
     });
 
-  fields.service.addEventListener("change", updateSummary);
+  fields.service.addEventListener("change", () => {
+    updateSummary();
+    saveDraft();
+  });
   form.addEventListener("input", saveDraft);
 
   // Los horarios de la tarjeta "Horarios disponibles" controlan el campo Hora.
@@ -179,6 +220,7 @@ if (form) {
   };
 
   const validatePayment = () => {
+    if (USE_REQUESTS_BACKEND) return true;
     const ok = Boolean(form.querySelector('[name="payment"]:checked'));
     document.querySelector("#payment-error").textContent = ok
       ? ""
@@ -211,8 +253,10 @@ if (form) {
       time: fields.time.value,
       address: fields.address.value.trim(),
       detail: fields.detail.value.trim(),
-      metodoPago: form.querySelector('[name="payment"]:checked').value,
     };
+    if (!USE_REQUESTS_BACKEND) {
+      values.metodoPago = form.querySelector('[name="payment"]:checked').value;
+    }
     const schema = await readSchema().catch(() => null);
     const schemaErrors = schema ? validateAgainstSchema(values, schema, "solicitudes") : [];
     if (schemaErrors.length) {
@@ -223,16 +267,32 @@ if (form) {
     submit.disabled = true;
     submit.textContent = "Enviando solicitud…";
     try {
-      const solicitud = await createSolicitud({
-        proveedorId: proveedor.id,
-        categoriaId: values.service,
-        metodoPagoId: values.metodoPago,
+      const requestValues = {
+        providerCatalogId: proveedor?.providerCatalogId,
+        categoryId: values.service,
         date: values.date,
         time: values.time,
         address: values.address,
         detail: values.detail,
+      };
+      const solicitud = await createSolicitud({
+        proveedorId: proveedor.id,
+        categoriaId: values.service,
+        metodoPagoId: values.metodoPago,
+        providerCatalogId: requestValues.providerCatalogId,
+        categoryId: requestValues.categoryId,
+        date: values.date,
+        time: values.time,
+        address: values.address,
+        detail: values.detail,
+        idempotencyKey:
+          USE_REQUESTS_BACKEND && requestValues.providerCatalogId
+            ? getIdempotencyKey(requestValues)
+            : undefined,
       });
       clearDraft();
+      pendingPayloadSignature = "";
+      pendingIdempotencyKey = "";
       message.classList.add("is-success");
       message.textContent = "¡Solicitud enviada! Abriendo el resumen…";
       location.href = `reserva.html?id=${encodeURIComponent(solicitud.id)}`;

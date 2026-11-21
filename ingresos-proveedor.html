@@ -33,8 +33,8 @@
           ><a href="mensajes-proveedor.html">Mensajes</a>
         </nav>
         <div class="nav-actions client-account">
-          <span class="client-avatar">S</span
-          ><span class="client-name" id="app-user-name">Sebastian</span
+          <span class="client-avatar" id="provider-avatar-initial"></span
+          ><span class="client-name" id="app-user-name"></span
           ><button class="button button-small logout-button" id="logout-button" type="button">
             Cerrar sesión
           </button>
@@ -47,22 +47,24 @@
       <h1 class="flow-title">Mis ingresos</h1>
       <section class="income-cards">
         <article class="income-card income-total">
-          <span>Total ganado</span><strong>$1.925.000</strong><small>Desde el inicio</small>
+          <span>Valor de tarifas de servicios completados</span><strong id="provider-total-income">$1.925.000</strong><small id="provider-total-income-note">No representa pagos procesados</small>
         </article>
         <article class="income-card">
-          <span>Este mes</span><strong>$190.000</strong><small>5 servicios completados</small>
+          <span>Este mes</span><strong id="provider-month-income-total">$190.000</strong><small id="provider-month-completed-count">5 servicios completados</small>
         </article>
-        <article class="income-card">
+        <article class="income-card" id="provider-rating-card">
           <span>Calificación promedio</span><strong>4.9 ★</strong
           ><small>Basado en 82 reseñas</small>
         </article>
       </section>
+      <p id="provider-request-data-note" class="muted-copy" hidden></p>
       <section class="flow-panel earnings-chart">
-        <h2>Ingresos por mes</h2>
+        <h2>Valor mensual de servicios completados</h2>
         <div
+          id="provider-income-chart"
           class="bar-chart"
           role="img"
-          aria-label="Ingresos mensuales: abril 320 mil, mayo 450 mil, junio 380 mil, julio 520 mil y agosto 190 mil pesos"
+          aria-label="Valor estimado de tarifas mensuales: abril 320 mil, mayo 450 mil, junio 380 mil, julio 520 mil y agosto 190 mil pesos"
         >
           <div><i style="height: 62%"></i><span>$320k</span><small>Abr</small></div>
           <div><i style="height: 88%"></i><span>$450k</span><small>May</small></div>
@@ -81,12 +83,14 @@
           </select></label
         >
       </div>
-      <section class="flow-panel earnings-row">
-        <div>
-          <strong>Ana Ruiz</strong>
-          <p>Plomería · 15 ago, 2026</p>
-        </div>
-        <span class="request-status status-completada">Completada</span><strong>$65.000</strong>
+      <section id="provider-completed-list" class="provider-completed-list">
+        <article class="flow-panel earnings-row">
+          <div>
+            <strong>Ana Ruiz</strong>
+            <p>Plomería · 15 ago, 2026</p>
+          </div>
+          <span class="request-status status-completada">Completada</span><strong>$65.000</strong>
+        </article>
       </section>
     </main>
     <footer class="site-footer">
