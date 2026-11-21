@@ -5,7 +5,7 @@ import {
   formatCOP,
   formatDate,
   formatDateTime,
-  getSession,
+  getCurrentProfile,
   statusClass,
   showLoading,
   showError,
@@ -46,7 +46,7 @@ function heading(status) {
 }
 
 function render(solicitud) {
-  const session = getSession();
+  const session = getCurrentProfile();
   const info = heading(solicitud.status);
   document.title = `${info.eyebrow} | HogarFix`;
   panel.innerHTML = `
@@ -79,7 +79,7 @@ function render(solicitud) {
         <div><dt>Ubicación</dt><dd>${escapeHTML(solicitud.address)}</dd></div>
         <div class="invoice-wide"><dt>Trabajo solicitado</dt><dd>${escapeHTML(solicitud.detail)}</dd></div>
         <div><dt>Método de pago</dt><dd>${escapeHTML(solicitud.paymentMethod?.nombre || "No indicado")}</dd></div>
-        <div><dt>Estado del pago</dt><dd>${escapeHTML(solicitud.paymentStatus || "Pendiente")}</dd></div>
+        <div><dt>Estado del pago</dt><dd>${escapeHTML(solicitud.paymentMethod ? solicitud.paymentStatus || "Pendiente" : "No disponible")}</dd></div>
         <div><dt>Estado</dt><dd><span class="request-status ${statusClass(solicitud.status)}">● ${escapeHTML(solicitud.status)}</span></dd></div>
         <div><dt>Creada</dt><dd>${escapeHTML(formatDateTime(solicitud.createdAt))}</dd></div>
       </dl>

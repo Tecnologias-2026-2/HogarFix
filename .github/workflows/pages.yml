@@ -28,6 +28,7 @@ jobs:
         run: |
           mkdir _site
           cp -r *.html assets css data js _site/
+          rm -f _site/prueba.html _site/js/prueba-firebase.js
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

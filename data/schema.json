@@ -114,7 +114,7 @@
       },
       "metodoPago": {
         "type": "string",
-        "required": true,
+        "required": false,
         "example": "efectivo"
       }
     }
@@ -139,7 +139,7 @@
       "bio": {
         "type": "string",
         "required": false,
-        "example": "Más de 5 años de experiencia"
+        "example": "Profesional con experiencia en servicios confiables para el hogar."
       },
       "phone": {
         "type": "string",
@@ -155,6 +155,29 @@
         "type": "number",
         "required": false,
         "example": 15
+      },
+      "experienceYears": {
+        "type": "number",
+        "required": false,
+        "example": 5
+      },
+      "coverageZone": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá"
+      },
+      "availability": {
+        "type": "string",
+        "required": false,
+        "example": "Lun - Sáb, 8:00 am - 6:00 pm"
+      },
+      "services": {
+        "type": "array",
+        "required": false,
+        "example": [
+          "plomeria",
+          "electricidad"
+        ]
       },
       "categorias": {
         "type": "array",
@@ -192,7 +215,7 @@
       "photo": {
         "type": "string",
         "required": false,
-        "example": "URL de Firebase Storage"
+        "example": "URL de Firebase Storage (integración pendiente)"
       }
     }
   },
