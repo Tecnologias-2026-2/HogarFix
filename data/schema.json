@@ -116,30 +116,20 @@
   },
   "proveedores": {
     "fields": {
-      "name": {
-        "type": "string",
-        "required": true,
-        "example": "Sebastián Torres"
-      },
       "bio": {
         "type": "string",
         "required": false,
-        "example": "Más de 5 años de experiencia"
+        "example": "Profesional con experiencia en servicios confiables para el hogar."
       },
-      "phone": {
-        "type": "string",
-        "required": false,
-        "example": "+57 300 123 45 67"
-      },
-      "zone": {
-        "type": "string",
-        "required": false,
-        "example": "Bogotá, Colombia"
-      },
-      "rate": {
+      "experienceYears": {
         "type": "number",
         "required": false,
-        "example": 95000
+        "example": 5
+      },
+      "coverageZone": {
+        "type": "string",
+        "required": false,
+        "example": "Bogotá"
       },
       "availability": {
         "type": "string",
@@ -150,8 +140,8 @@
         "type": "array",
         "required": false,
         "example": [
-          "Plomería",
-          "Electricidad"
+          "plomeria",
+          "electricidad"
         ]
       }
     }

@@ -5,7 +5,7 @@ import {
   formatCOP,
   formatDate,
   formatDateTime,
-  getSession,
+  getCurrentProfile,
   statusClass,
   showLoading,
   showError,
@@ -46,7 +46,7 @@ function heading(status) {
 }
 
 function render(solicitud) {
-  const session = getSession();
+  const session = getCurrentProfile();
   const info = heading(solicitud.status);
   document.title = `${info.eyebrow} | HogarFix`;
   panel.innerHTML = `

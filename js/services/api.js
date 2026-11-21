@@ -1,13 +1,19 @@
 // Capa de servicios de HogarFix.
-// Todas las pantallas piden los datos a través de este módulo. Si js/config.js define
-// API_BASE_URL, se llama al backend con fetch; si no, se usa el modo demostración
-// (data/data.js + localStorage). Así el frontend no cambia cuando el backend esté listo.
+// Los servicios de demostración usan data/data.js y localStorage; los perfiles
+// personales y profesionales requieren el backend y no tienen fallback local.
 import * as demoData from "../../data/data.js";
-import { API_BASE_URL, DEMO_LATENCY_MS } from "../config.js";
+import {
+  DEMO_LATENCY_MS,
+  PROFILE_API_BASE_URL,
+  REQUESTS_API_BASE_URL,
+} from "../config.js";
+import { getAuthState } from "./auth.js";
 
-export const USE_BACKEND = Boolean(API_BASE_URL);
+export const USE_PROFILE_BACKEND = Boolean(PROFILE_API_BASE_URL);
+export const USE_REQUESTS_BACKEND = Boolean(REQUESTS_API_BASE_URL);
+// Compatibilidad con consumidores existentes; el enrutamiento usa los flags por módulo.
+export const USE_BACKEND = USE_PROFILE_BACKEND || USE_REQUESTS_BACKEND;
 const REQUESTS_KEY = "hogarfix.requests.v1";
-const SESSION_KEY = "hogarfix.session.v1";
 
 export const ESTADOS = [
   "Pendiente",
@@ -29,23 +35,30 @@ export class ApiError extends Error {
 
 const clone = (value) => structuredClone(value);
 
-function getSession() {
-  try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
-  } catch {
-    return null;
-  }
+async function requireAuthState() {
+  const state = await getAuthState();
+  if (!state.user) throw new ApiError("Inicia sesión para continuar.", 401);
+  if (state.error || !state.profile)
+    throw new ApiError("No se pudo validar tu perfil. Vuelve a iniciar sesión.");
+  return state;
 }
 
 /* ---------- Backend real ---------- */
 
-async function http(path, options = {}) {
-  const session = getSession();
+async function http(baseUrl, configName, path, options = {}, requiresAuth = false) {
+  if (!baseUrl) {
+    throw new ApiError(
+      `La URL del backend no está configurada. Define ${configName} en js/config.js.`,
+      503,
+    );
+  }
   const headers = { "Content-Type": "application/json", ...options.headers };
-  if (session?.token) headers.Authorization = `Bearer ${session.token}`;
+  const state = requiresAuth ? await requireAuthState() : await getAuthState();
+  if (!requiresAuth && state.error) throw new ApiError("No se pudo validar tu perfil.");
+  if (state.user) headers.Authorization = `Bearer ${await state.user.getIdToken()}`;
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+    response = await fetch(`${baseUrl}${path}`, { ...options, headers });
   } catch {
     throw new ApiError("No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.");
   }
@@ -59,6 +72,94 @@ async function http(path, options = {}) {
     throw new ApiError(message, response.status);
   }
   return response.status === 204 ? null : response.json();
+}
+
+function profileHttp(path, options = {}) {
+  return http(PROFILE_API_BASE_URL, "PROFILE_API_BASE_URL", path, options, true);
+}
+
+function requestsHttp(path, options = {}) {
+  return http(REQUESTS_API_BASE_URL, "REQUESTS_API_BASE_URL", path, options, true);
+}
+
+function normalizeTimestamp(value) {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  }
+  if (!value || typeof value !== "object") return "";
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+
+  const seconds = Number.isFinite(value.seconds) ? value.seconds : value._seconds;
+  const nanoseconds = Number.isFinite(value.nanoseconds)
+    ? value.nanoseconds
+    : value._nanoseconds;
+  if (!Number.isFinite(seconds)) return "";
+  const date = new Date(seconds * 1000 + (Number(nanoseconds) || 0) / 1e6);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function normalizeRequest(request) {
+  if (!request || typeof request !== "object" || typeof request.id !== "string") {
+    throw new ApiError("El servidor devolvió una solicitud con formato inválido.");
+  }
+  const category = request.categorySnapshot || {};
+  const provider = request.providerSnapshot || {};
+  const amount = category.priceCOP ?? category.fixedPriceCOP;
+  if (
+    typeof request.status !== "string"
+    || typeof request.date !== "string"
+    || typeof request.time !== "string"
+    || typeof request.address !== "string"
+    || typeof request.detail !== "string"
+    || typeof category.name !== "string"
+    || typeof provider.displayName !== "string"
+    || !Number.isFinite(amount)
+  ) {
+    throw new ApiError("El servidor devolvió una solicitud incompleta o incompatible.");
+  }
+  return {
+    ...request,
+    createdAt: normalizeTimestamp(request.createdAt),
+    updatedAt: normalizeTimestamp(request.updatedAt),
+    acceptedAt: normalizeTimestamp(request.acceptedAt),
+    rejectedAt: normalizeTimestamp(request.rejectedAt),
+    confirmedAt: normalizeTimestamp(request.confirmedAt),
+    cancelledAt: normalizeTimestamp(request.cancelledAt),
+    startedAt: normalizeTimestamp(request.startedAt),
+    completedAt: normalizeTimestamp(request.completedAt),
+    clientName: request.clientDisplayName || "",
+    provider: provider.displayName || "",
+    providerProfession: category.name || "",
+    service: category.name || "",
+    amount,
+    categoriaId: request.categoryId,
+  };
+}
+
+function unwrapRequest(response) {
+  if (!response?.request) {
+    throw new ApiError("El servidor devolvió una respuesta de solicitud con formato inválido.");
+  }
+  return normalizeRequest(response.request);
+}
+
+function unwrapRequests(response) {
+  if (!Array.isArray(response?.requests)) {
+    throw new ApiError("El servidor devolvió una lista de solicitudes con formato inválido.");
+  }
+  return response.requests.map(normalizeRequest);
+}
+
+function unavailableCatalog() {
+  return Promise.reject(
+    new ApiError(
+      "El backend de solicitudes todavía no ofrece un catálogo real de categorías y proveedores.",
+      503,
+    ),
+  );
 }
 
 /* ---------- Modo demostración ---------- */
@@ -106,18 +207,13 @@ function findCategoria(idOrName) {
 
 // GET /categorias
 export function getCategorias() {
-  if (USE_BACKEND) return http("/categorias");
+  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
   return demo(demoData.categorias);
 }
 
 // GET /proveedores?categoria=&disponible=
 export function getProveedores({ categoria, disponible } = {}) {
-  if (USE_BACKEND) {
-    const params = new URLSearchParams();
-    if (categoria) params.set("categoria", categoria);
-    if (disponible) params.set("disponible", "true");
-    return http(`/proveedores${params.size ? `?${params}` : ""}`);
-  }
+  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
   return demo(() =>
     demoData.proveedores.filter(
       (item) =>
@@ -128,7 +224,7 @@ export function getProveedores({ categoria, disponible } = {}) {
 
 // GET /proveedores/:id
 export function getProveedor(id) {
-  if (USE_BACKEND) return http(`/proveedores/${encodeURIComponent(id)}`);
+  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
   return demo(() => {
     const proveedor = demoData.proveedores.find((item) => item.id === id);
     if (!proveedor) throw new ApiError("No encontramos a este profesional.", 404);
@@ -138,80 +234,167 @@ export function getProveedor(id) {
 
 // GET /solicitudes (el backend filtra por el cliente autenticado)
 export function getSolicitudes() {
-  if (USE_BACKEND) return http("/solicitudes");
-  const email = getSession()?.email;
-  return demo(() =>
-    readRequests().filter((item) => !email || !item.ownerEmail || item.ownerEmail === email),
+  if (USE_REQUESTS_BACKEND) return requestsHttp("/solicitudes").then(unwrapRequests);
+  return requireAuthState().then(({ user }) =>
+    demo(() => readRequests().filter((item) => item.ownerEmail === user.email)),
   );
 }
 
 // GET /solicitudes/:id
 export function getSolicitud(id) {
-  if (USE_BACKEND) return http(`/solicitudes/${encodeURIComponent(id)}`);
-  const email = getSession()?.email;
-  return demo(() => {
-    const solicitud = readRequests().find(
-      (item) => item.id === id && (!email || !item.ownerEmail || item.ownerEmail === email),
-    );
-    if (!solicitud) throw new ApiError("No encontramos esa solicitud.", 404);
-    return solicitud;
-  });
+  if (USE_REQUESTS_BACKEND)
+    return requestsHttp(`/solicitudes/${encodeURIComponent(id)}`).then(unwrapRequest);
+  return requireAuthState().then(({ user }) =>
+    demo(() => {
+      const solicitud = readRequests().find(
+        (item) => item.id === id && item.ownerEmail === user.email,
+      );
+      if (!solicitud) throw new ApiError("No encontramos esa solicitud.", 404);
+      return solicitud;
+    }),
+  );
 }
 
 // POST /solicitudes
 // La tarifa NO se envía desde el formulario: la asigna el servidor según la categoría.
-export function createSolicitud({ proveedorId, categoriaId, date, time, address, detail }) {
+export function createSolicitud({
+  proveedorId,
+  categoriaId,
+  providerCatalogId,
+  categoryId,
+  date,
+  time,
+  address,
+  detail,
+  idempotencyKey,
+}) {
+  if (USE_REQUESTS_BACKEND) {
+    if (!providerCatalogId || !categoryId) {
+      throw new ApiError(
+        "No se puede crear la solicitud sin los identificadores reales del catálogo.",
+        503,
+      );
+    }
+    if (typeof idempotencyKey !== "string" || !/^[\w.-]{16,128}$/.test(idempotencyKey)) {
+      throw new ApiError("No se pudo generar una clave de idempotencia válida para la solicitud.");
+    }
+    const payload = { providerCatalogId, categoryId, date, time, address, detail };
+    return requestsHttp("/solicitudes", {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify(payload),
+    }).then(unwrapRequest);
+  }
+
   const payload = { proveedorId, categoriaId, date, time, address, detail };
-  if (USE_BACKEND) return http("/solicitudes", { method: "POST", body: JSON.stringify(payload) });
-  return demo(() => {
-    const categoria = findCategoria(categoriaId);
-    const proveedor = demoData.proveedores.find((item) => item.id === proveedorId);
-    if (!categoria) throw new ApiError("La categoría seleccionada no existe.", 400);
-    if (!proveedor) throw new ApiError("El profesional seleccionado no existe.", 400);
-    if (!proveedor.categorias.includes(categoria.id))
-      throw new ApiError(`${proveedor.name} no presta servicios de ${categoria.nombre}.`, 400);
-    const session = getSession();
-    const solicitud = {
-      id: `HF-${Date.now().toString(36).toUpperCase()}`,
-      ownerEmail: session?.email || "cliente-demo",
-      clientName: session ? `${session.firstName} ${session.lastName}` : "Cliente",
-      providerId: proveedor.id,
-      provider: proveedor.name,
-      providerProfession: proveedor.profession,
-      categoriaId: categoria.id,
-      service: categoria.nombre,
-      date,
-      time,
-      address: String(address).trim(),
-      detail: String(detail).trim(),
-      amount: categoria.tarifa,
-      status: "Pendiente",
-      createdAt: new Date().toISOString(),
-    };
-    writeRequests([solicitud, ...readRequests()]);
-    return solicitud;
-  });
+  return requireAuthState().then(({ user, profile }) =>
+    demo(() => {
+      const categoria = findCategoria(categoriaId);
+      const proveedor = demoData.proveedores.find((item) => item.id === proveedorId);
+      if (!categoria) throw new ApiError("La categoría seleccionada no existe.", 400);
+      if (!proveedor) throw new ApiError("El profesional seleccionado no existe.", 400);
+      if (!proveedor.categorias.includes(categoria.id))
+        throw new ApiError(`${proveedor.name} no presta servicios de ${categoria.nombre}.`, 400);
+      const solicitud = {
+        id: `HF-${Date.now().toString(36).toUpperCase()}`,
+        ownerEmail: user.email,
+        clientName: `${profile.firstName} ${profile.lastName}`,
+        providerId: proveedor.id,
+        provider: proveedor.name,
+        providerProfession: proveedor.profession,
+        categoriaId: categoria.id,
+        service: categoria.nombre,
+        date,
+        time,
+        address: String(address).trim(),
+        detail: String(detail).trim(),
+        amount: categoria.tarifa,
+        status: "Pendiente",
+        createdAt: new Date().toISOString(),
+      };
+      writeRequests([solicitud, ...readRequests()]);
+      return solicitud;
+    }),
+  );
 }
 
 // PATCH /solicitudes/:id/confirmar
 export function confirmarSolicitud(id) {
-  if (USE_BACKEND)
-    return http(`/solicitudes/${encodeURIComponent(id)}/confirmar`, { method: "PATCH" });
-  return demo(() => {
-    const items = readRequests();
-    const solicitud = items.find((item) => item.id === id);
-    if (!solicitud) throw new ApiError("No encontramos esa solicitud.", 404);
-    if (solicitud.status !== "Aceptada")
-      throw new ApiError("Solo puedes confirmar solicitudes que el profesional ya aceptó.", 409);
-    solicitud.status = "Confirmada";
-    solicitud.confirmedAt = new Date().toISOString();
-    writeRequests(items);
-    return solicitud;
+  if (USE_REQUESTS_BACKEND)
+    return requestsHttp(`/solicitudes/${encodeURIComponent(id)}/confirmar`, {
+      method: "PATCH",
+    }).then(unwrapRequest);
+  return requireAuthState().then(({ user }) =>
+    demo(() => {
+      const items = readRequests();
+      const solicitud = items.find((item) => item.id === id && item.ownerEmail === user.email);
+      if (!solicitud) throw new ApiError("No encontramos esa solicitud.", 404);
+      if (solicitud.status !== "Aceptada")
+        throw new ApiError("Solo puedes confirmar solicitudes que el profesional ya aceptó.", 409);
+      solicitud.status = "Confirmada";
+      solicitud.confirmedAt = new Date().toISOString();
+      writeRequests(items);
+      return solicitud;
+    }),
+  );
+}
+
+// GET /profile/me y PATCH /profile/me
+export function getMyProfile() {
+  return profileHttp("/profile/me");
+}
+
+export function updateMyProfile(profile) {
+  return profileHttp("/profile/me", { method: "PATCH", body: JSON.stringify(profile) });
+}
+
+// GET /provider/profile/me y PATCH /provider/profile/me
+export function getProviderProfile() {
+  return profileHttp("/provider/profile/me");
+}
+
+export function updateProviderProfile(profile) {
+  return profileHttp("/provider/profile/me", {
+    method: "PATCH",
+    body: JSON.stringify(profile),
   });
 }
 
+// GET /provider/eligibility
+export function getProviderEligibility() {
+  return profileHttp("/provider/eligibility");
+}
+
+// GET /provider/solicitudes y GET /provider/solicitudes/:id
+export function getSolicitudesProveedor() {
+  return requestsHttp("/provider/solicitudes").then(unwrapRequests);
+}
+
+export function getSolicitudProveedor(id) {
+  return requestsHttp(`/provider/solicitudes/${encodeURIComponent(id)}`).then(unwrapRequest);
+}
+
+// PATCH /provider/solicitudes/:id/{aceptar,rechazar,iniciar,completar}
+export function cambiarEstadoSolicitud(id, status) {
+  const actions = {
+    Aceptada: "aceptar",
+    Rechazada: "rechazar",
+    "En proceso": "iniciar",
+    Completada: "completar",
+  };
+  const action = actions[status];
+  if (!action) throw new ApiError("La transición de estado solicitada no es válida.", 400);
+  return requestsHttp(
+    `/provider/solicitudes/${encodeURIComponent(id)}/${action}`,
+    { method: "PATCH" },
+  ).then(unwrapRequest);
+}
+
 export const api = {
-  API_BASE_URL,
+  PROFILE_API_BASE_URL,
+  REQUESTS_API_BASE_URL,
+  USE_PROFILE_BACKEND,
+  USE_REQUESTS_BACKEND,
   USE_BACKEND,
   getCategorias,
   getProveedores,
@@ -220,4 +403,12 @@ export const api = {
   getSolicitud,
   createSolicitud,
   confirmarSolicitud,
+  getSolicitudesProveedor,
+  getSolicitudProveedor,
+  cambiarEstadoSolicitud,
+  getMyProfile,
+  updateMyProfile,
+  getProviderProfile,
+  updateProviderProfile,
+  getProviderEligibility,
 };
