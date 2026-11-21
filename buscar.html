@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Busca profesionales disponibles para servicios del hogar en HogarFix."
+    />
+    <title>Buscar profesionales | HogarFix</title>
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="search-page">
+    <a class="skip-link" href="#search-results">Saltar a los resultados</a>
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="app.html#inicio" aria-label="HogarFix, inicio">
+          <img src="assets/figma-search-logo.png" alt="" width="28" height="28" />
+          <span><strong>HOGARFIX</strong><small>Calidad en cada arreglo</small></span>
+        </a>
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="client-nav"
+          aria-label="Abrir menú"
+        >
+          ☰
+        </button>
+        <nav id="client-nav" class="primary-nav client-nav" aria-label="Navegación del cliente">
+          <a href="app.html#inicio">Inicio</a>
+          <a href="buscar.html" aria-current="page">Buscar</a>
+          <a href="solicitudes.html">Mis Solicitudes</a>
+          <a href="chat.html">Chat</a><a href="mi-perfil.html">Mi Perfil</a>
+        </nav>
+        <div class="nav-actions client-account">
+          <span class="client-avatar"><img src="assets/figma-search-user.svg" alt="" /></span>
+          <span class="client-name" id="app-user-name">Samara</span>
+          <button
+            class="account-menu-button"
+            type="button"
+            aria-label="Opciones de cuenta"
+            title="Opciones de cuenta"
+          >
+            ⌄
+          </button>
+          <button class="button button-small logout-button" id="logout-button" type="button">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="search-results">
+      <div class="search-toolbar">
+        <div class="search-toolbar-inner">
+          <a class="search-back" href="app.html#inicio"
+            ><img src="assets/figma-search-back.svg" alt="" /><span>Inicio</span></a
+          >
+          <form class="provider-search" id="provider-search-form" role="search">
+            <label class="visually-hidden" for="service-query">Buscar servicio o profesional</label>
+            <img src="assets/figma-search-search.svg" alt="" />
+            <input
+              id="service-query"
+              name="q"
+              type="search"
+              placeholder="Buscar Servicio"
+              autocomplete="off"
+            />
+            <button class="button" type="submit">Buscar</button>
+          </form>
+        </div>
+      </div>
+
+      <section class="search-content container" aria-label="Profesionales disponibles">
+        <div class="catalog-heading">
+          <p class="catalog-title">Categorías y tarifas fijas</p>
+          <p>El precio depende solo de la categoría y no cambia al solicitar el servicio.</p>
+        </div>
+        <div class="category-catalog" id="category-catalog" aria-live="polite">
+          <p class="load-state">Cargando categorías…</p>
+        </div>
+
+        <div class="filter-row" aria-label="Filtros de búsqueda">
+          <span class="filter-label">Filtrar:</span>
+          <button class="filter-chip" type="button" data-filter="plomeria" aria-pressed="false">
+            <span aria-hidden="true">🔧</span> Plomería
+          </button>
+          <button class="filter-chip" type="button" data-filter="jardineria" aria-pressed="false">
+            <span aria-hidden="true">🌿</span> Jardinería
+          </button>
+          <button class="filter-chip" type="button" data-filter="electricidad" aria-pressed="false">
+            <span aria-hidden="true">⚡</span> Electricidad
+          </button>
+          <button class="filter-chip" type="button" data-filter="aseo-general" aria-pressed="false">
+            <span aria-hidden="true">🧹</span> Aseo general
+          </button>
+          <label class="available-filter"
+            ><input id="available-only" name="availableOnly" type="checkbox" />
+            <span>Solo disponibles</span></label
+          >
+        </div>
+
+        <div class="results-heading">
+          <h1>Profesionales cerca de ti</h1>
+          <span id="result-count" aria-live="polite"></span>
+        </div>
+        <div class="search-provider-grid" id="provider-grid" aria-live="polite">
+          <p class="load-state">Cargando profesionales…</p>
+        </div>
+        <p id="no-results" class="no-results" hidden>
+          No encontramos profesionales con esos filtros. Prueba otra búsqueda.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer search-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-about">
+            <a class="brand footer-brand" href="app.html#inicio"
+              ><img src="assets/footer-logo.png" alt="" width="28" height="28" /><span
+                ><strong>HOGARFIX</strong><small>Calidad en cada arreglo</small></span
+              ></a
+            >
+            <p>Conectamos hogares con profesionales de confianza. Rápido, seguro y garantizado.</p>
+          </div>
+          <div>
+            <h2>Servicios</h2>
+            <a href="buscar.html">Plomería</a><a href="buscar.html">Electricidad</a
+            ><a href="buscar.html">Limpieza general</a><a href="buscar.html">Jardinería</a>
+          </div>
+          <div>
+            <h2>Compañía</h2>
+            <a href="app.html#inicio">Nosotros</a><a href="app.html#como-funciona">Cómo funciona</a>
+          </div>
+          <div>
+            <h2>Ayuda</h2>
+            <a href="mailto:hola@hogarfix.com">Centro de ayuda</a
+            ><a href="mailto:hola@hogarfix.com">Contacto</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© <span id="year"></span> HogarFix. Todos los derechos reservados.</span
+          ><span>Español</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

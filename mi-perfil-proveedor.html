@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Panel de proveedor HogarFix" />
+    <title>Mi perfil profesional | HogarFix</title>
+    <link rel="icon" href="assets/logo.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="search-page provider-portal">
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="inicio-proveedor.html"
+          ><img src="assets/logo.png" alt="" width="36" height="36" /><span
+            ><strong>HOGARFIX</strong><small>Calidad en cada arreglo</small></span
+          ></a
+        ><button
+          class="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="provider-nav"
+          aria-label="Abrir menú"
+        >
+          ☰
+        </button>
+        <nav id="provider-nav" class="primary-nav client-nav" aria-label="Navegación del proveedor">
+          <a href="inicio-proveedor.html">Dashboard</a
+          ><a href="solicitudes-proveedor.html">Mis Solicitudes</a
+          ><a href="mi-perfil-proveedor.html">Mi Perfil</a
+          ><a href="ingresos-proveedor.html">Mis Ingresos</a
+          ><a href="mensajes-proveedor.html">Mensajes</a>
+        </nav>
+        <div class="nav-actions client-account">
+          <span class="client-avatar" id="provider-avatar-initial"></span
+          ><span class="client-name" id="app-user-name"></span
+          ><button class="button button-small logout-button" id="logout-button" type="button">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </header>
+    <main class="flow-main container" id="contenido">
+      <a class="flow-back" href="inicio-proveedor.html">← Dashboard</a>
+      <p class="eyebrow">Tu cuenta profesional</p>
+      <h1 class="flow-title">Mi perfil profesional</h1>
+      <section class="flow-panel profile-summary-panel">
+        <img class="profile-large-avatar" src="assets/provider-avatar.svg" alt="" />
+        <div>
+          <h2 id="provider-profile-name" hidden></h2>
+          <p id="provider-validation-status" aria-live="polite">Validación automática pendiente.</p>
+          <span id="provider-approval-status" class="muted-copy" aria-live="polite">
+            Pendiente de revisión administrativa.
+          </span>
+          <p id="provider-eligibility-status" class="muted-copy" aria-live="polite">
+            Comprobando si la cuenta está habilitada para ofrecer servicios.
+          </p>
+        </div>
+      </section>
+      <form id="provider-personal-form" class="flow-panel provider-profile-form">
+        <h2>Información personal</h2>
+        <div class="form-row">
+          <label>Nombre<input name="firstName" autocomplete="given-name" required /></label
+          ><label>Apellido<input name="lastName" autocomplete="family-name" required /></label>
+        </div>
+        <div class="form-row">
+          <label>Correo electrónico<input id="provider-profile-email" type="email" disabled /></label
+          ><label>Teléfono<input name="phone" type="tel" autocomplete="tel" /></label>
+        </div>
+        <div class="form-actions">
+          <button class="button" type="submit">Guardar datos personales</button>
+        </div>
+        <p id="provider-personal-message" class="muted-copy" aria-live="polite"></p>
+      </form>
+      <form id="provider-profile-form" class="flow-panel provider-profile-form">
+        <h2>Perfil profesional</h2>
+        <label
+          >Descripción profesional<textarea name="bio" rows="3" maxlength="1000"></textarea>
+        </label>
+        <div class="form-row">
+          <label
+            >Años de experiencia<input
+              name="experienceYears"
+              type="number"
+              min="0"
+              max="70"
+              step="1"
+          /></label>
+          <label>Zona de cobertura<input name="coverageZone" maxlength="160" /></label>
+          <label>Disponibilidad<input name="availability" maxlength="200" /></label>
+        </div>
+        <h2>Servicios que ofrezco</h2>
+        <div class="service-tags">
+          <label><input type="checkbox" name="services" value="plomeria" /> Plomería</label
+          ><label
+            ><input type="checkbox" name="services" value="electricidad" />
+            Electricidad</label
+          ><label><input type="checkbox" name="services" value="jardineria" /> Jardinería</label
+          ><label
+            ><input type="checkbox" name="services" value="aseo-general" /> Aseo general</label
+          >
+        </div>
+        <div class="form-actions">
+          <button class="button" type="submit">Guardar perfil profesional</button>
+        </div>
+        <p class="form-feedback" id="provider-profile-message" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-bottom">
+          <span>© <span id="year"></span> HogarFix. Todos los derechos reservados.</span
+          ><span>Perfil conectado a HogarFix</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

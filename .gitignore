@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+# Dependencias y archivos del sistema
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Configuración local del editor
+.vscode/
+
+# Firebase Admin service-account keys
+*serviceAccount*.json
+*service-account*.json
+*firebase-adminsdk*.json
