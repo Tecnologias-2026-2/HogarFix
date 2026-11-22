@@ -233,13 +233,7 @@ function renderIncome() {
     `${completed.filter((item) => isCurrentMonth(completedAt(item))).length} completados en las solicitudes cargadas`,
   );
 
-  const ratingCard = document.querySelector("#provider-rating-card");
-  if (ratingCard) {
-    const rating = ratingCard.querySelector("strong");
-    const note = ratingCard.querySelector("small");
-    if (rating) rating.textContent = "No disponible";
-    if (note) note.textContent = "El backend aún no expone reseñas.";
-  }
+  // La tarjeta de calificación la llena load() con los datos de /provider/:uid/calificaciones.
 
   const chart = document.querySelector("#provider-income-chart");
   if (chart) {
@@ -409,8 +403,8 @@ if (isProviderPage && USE_REQUESTS_BACKEND) {
   if (ratingCard) {
     const rating = ratingCard.querySelector("strong");
     const note = ratingCard.querySelector("small");
-    if (rating) rating.textContent = "No disponible";
-    if (note) note.textContent = "El backend aún no expone reseñas.";
+    if (rating) rating.textContent = "–";
+    if (note) note.textContent = "Cargando reseñas…";
   }
   document.querySelector("#provider-eligibility-banner")?.removeAttribute("hidden");
 

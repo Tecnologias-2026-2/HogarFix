@@ -45,6 +45,8 @@ class MemoryDocumentReference {
       id: this.id,
       exists: data !== undefined,
       data: () => clone(data),
+      get: (field) => (data === undefined ? undefined : clone(data)[field]),
+      ref: this,
     };
   }
 
@@ -287,7 +289,7 @@ test("idempotency is scoped to the client and payload", async () => {
 
   assert.equal(replay.id, original.id);
   const requests = [...db.documents.keys()].filter(
-    (key) => key.startsWith("solicitudes/") && !key.includes("/events/"),
+    (key) => key.startsWith("solicitudes/") && !key.includes("/events/") && !key.includes("/reminders/"),
   );
   assert.equal(requests.length, 1);
 
