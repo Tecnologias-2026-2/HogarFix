@@ -271,5 +271,32 @@
         "example": "URL de Firebase Storage"
       }
     }
+  },
+  "firestoreBackend": {
+    "description": "Colecciones persistidas por el backend de Firebase Admin. Las contraseñas pertenecen a Firebase Authentication y nunca se almacenan en Firestore.",
+    "collections": {
+      "users/{uid}": ["email", "firstName", "lastName", "role"],
+      "providerProfiles/{uid}": ["bio", "experienceYears", "coverageZone", "availability", "services", "automaticValidation", "adminApproval", "ratingCount", "ratingAverage"],
+      "categories/{categoryId}": ["name", "active", "fixedPriceCOP", "durationMinutes"],
+      "providerCatalog/{catalogId}": ["providerUid", "active"],
+      "solicitudes/{requestId}": ["clientUid", "providerUid", "providerCatalogId", "categoryId", "categorySnapshot", "providerSnapshot", "scheduledAt", "scheduledEndAt", "address", "detail", "status", "createdAt", "updatedAt"],
+      "solicitudes/{requestId}/events/{eventId}": ["type", "actorUid", "actorRole", "fromStatus", "toStatus", "createdAt"],
+      "solicitudes/{requestId}/reminders/{recipientRole}": ["requestId", "recipientUid", "recipientRole", "scheduledAt", "deliverAt", "status", "createdAt"],
+      "requestIdempotency/{keyHash}": ["requestId", "payloadHash", "createdAt"],
+      "ratings/{requestId}": ["serviceId", "clientUid", "clientDisplayName", "providerUid", "rating", "comment", "createdAt"],
+      "notifications/{notificationId}": ["recipientUid", "type", "requestId", "fromStatus", "toStatus", "actorRole", "readAt", "createdAt"],
+      "supportMessages/{messageId}": ["uid", "role", "subject", "message", "status", "createdAt"]
+    },
+    "relationships": [
+      "users/{uid} 1:N solicitudes como clientUid",
+      "users/{uid} 1:N solicitudes como providerUid",
+      "providerCatalog.providerUid -> users/{uid}",
+      "solicitudes.categoryId -> categories/{categoryId}",
+      "solicitudes/{requestId} 1:N events",
+      "solicitudes/{requestId} 1:N reminders para cliente y proveedor",
+      "solicitudes/{requestId} 0:1 ratings/{requestId}",
+      "users/{uid} 1:N notifications por recipientUid",
+      "users/{uid} 1:N supportMessages por uid"
+    ]
   }
 }
