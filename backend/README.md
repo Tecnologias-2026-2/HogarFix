@@ -50,6 +50,45 @@ Las rutas inexistentes responden HTTP 404 en JSON.
 
 ## Autenticación y autorización
 
+## Documentación de endpoints
+
+Todas las rutas utilizan el prefijo `/api`.
+
+| Método | Endpoint | Acceso | Descripción |
+|---|---|---|---|
+| GET | `/api/health` | Público | Comprueba el estado del servidor |
+| GET | `/api/client/me` | Cliente autenticado | Consulta la identidad del cliente |
+| GET | `/api/provider/me` | Proveedor autenticado | Consulta la identidad del proveedor |
+| GET | `/api/profile/me` | Usuario autenticado | Consulta el perfil propio |
+| PATCH | `/api/profile/me` | Usuario autenticado | Actualiza el perfil propio |
+| GET | `/api/provider/profile/me` | Proveedor autenticado | Consulta el perfil profesional |
+| PATCH | `/api/provider/profile/me` | Proveedor autenticado | Actualiza el perfil profesional |
+| GET | `/api/provider/eligibility` | Proveedor autenticado | Consulta su elegibilidad |
+| PATCH | `/api/admin/providers/:uid/approval` | Administrador | Actualiza la aprobación de un proveedor |
+| POST | `/api/solicitudes` | Cliente autenticado | Crea una solicitud de servicio |
+| GET | `/api/solicitudes` | Cliente autenticado | Lista las solicitudes propias |
+| GET | `/api/solicitudes/:id` | Cliente autenticado | Consulta una solicitud propia |
+| PATCH | `/api/solicitudes/:id/confirmar` | Cliente autenticado | Confirma una solicitud |
+| PATCH | `/api/solicitudes/:id/cancelar` | Cliente autenticado | Cancela una solicitud |
+| GET | `/api/provider/solicitudes` | Proveedor autenticado | Lista solicitudes asignadas |
+| GET | `/api/provider/solicitudes/:id` | Proveedor autenticado | Consulta una solicitud asignada |
+| PATCH | `/api/provider/solicitudes/:id/aceptar` | Proveedor autenticado | Acepta una solicitud |
+| PATCH | `/api/provider/solicitudes/:id/rechazar` | Proveedor autenticado | Rechaza una solicitud |
+| PATCH | `/api/provider/solicitudes/:id/iniciar` | Proveedor autenticado | Inicia un servicio |
+| PATCH | `/api/provider/solicitudes/:id/completar` | Proveedor autenticado | Marca un servicio como completado |
+
+### Convenciones de la API
+
+- `GET`: consultar información.
+- `POST`: crear recursos.
+- `PATCH`: actualizar parcialmente un recurso o cambiar su estado.
+- Los identificadores dinámicos se representan con parámetros como `:id` y `:uid`.
+- Las rutas privadas requieren un token Firebase en la cabecera `Authorization`.
+- Las respuestas se entregan en formato JSON.
+- Los errores utilizan códigos HTTP apropiados y una respuesta con `status: "error"` y `message`.
+- Las respuestas exitosas utilizan `status: "ok"`.
+
+
 Las rutas privadas requieren `Authorization: Bearer <Firebase ID token>`. El middleware verifica firma, vencimiento y revocación mediante Firebase Admin y obtiene el rol desde `users/{uid}` en Firestore; nunca confía en un rol enviado por el cliente.
 
 - `GET /api/client/me`: requiere el rol `Cliente`.
