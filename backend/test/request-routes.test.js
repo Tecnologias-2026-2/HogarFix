@@ -54,7 +54,7 @@ function createRequestServiceMock(overrides = {}) {
   return { calls, requestService: { ...requestService, ...overrides } };
 }
 
-function createTestApp({ requestServiceOverrides } = {}) {
+function createTestApp({ requestServiceOverrides, supportService } = {}) {
   const { calls, requestService } = createRequestServiceMock(requestServiceOverrides);
   const app = createApp(
     {
@@ -67,7 +67,12 @@ function createTestApp({ requestServiceOverrides } = {}) {
       },
       loadUserProfile: async (uid) => profiles[uid] || null,
     },
-    { requestService },
+    { requestService, supportService: supportService || {
+      async listNotifications(args) { calls.push(["listNotifications", args]); return []; },
+      async markNotificationRead(args) { calls.push(["markNotificationRead", args]); return { id: args.notificationId }; },
+      listFaqs() { calls.push(["listFaqs"]); return [{ id: "faq-1" }]; },
+      async createSupportMessage(args) { calls.push(["createSupportMessage", args]); return { id: "message-1" }; },
+    } },
   );
   return { app, calls };
 }
@@ -396,4 +401,26 @@ test("CORS permits authenticated POST requests with the idempotency header", asy
     if (previousOrigins === undefined) delete process.env.CORS_ORIGINS;
     else process.env.CORS_ORIGINS = previousOrigins;
   }
+});
+
+test("support and notification endpoints are authenticated and use the verified UID", async () => {
+  const { app, calls } = createTestApp();
+  await withServer(app, async (baseUrl) => {
+    assert.equal((await request(baseUrl, "/api/notifications", "client-token")).status, 200);
+    assert.equal((await request(baseUrl, "/api/notifications/notice-1/read", "client-token", { method: "PATCH" })).status, 200);
+    assert.equal((await request(baseUrl, "/api/support/faqs", "provider-token")).status, 200);
+    const sent = await request(baseUrl, "/api/support/messages", "provider-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subject: "Ayuda con mi cuenta", message: "Necesito ayuda para actualizar mi perfil." }),
+    });
+    assert.equal(sent.status, 201);
+    assert.deepEqual(calls, [
+      ["listNotifications", { uid: "client-uid" }],
+      ["markNotificationRead", { uid: "client-uid", notificationId: "notice-1" }],
+      ["listFaqs"],
+      ["createSupportMessage", { uid: "provider-uid", role: "Proveedor", input: { subject: "Ayuda con mi cuenta", message: "Necesito ayuda para actualizar mi perfil." } }],
+    ]);
+    assert.equal((await request(baseUrl, "/api/support/faqs", "invalid")).status, 401);
+  });
 });

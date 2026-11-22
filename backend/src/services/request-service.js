@@ -319,6 +319,18 @@ export function createRequestService({
           toStatus: "Pendiente",
           createdAt: timestamp,
         });
+        const remindAt = new Date(values.scheduledAt.getTime() - 24 * 60 * 60 * 1000);
+        for (const [recipientUid, recipientRole] of [[clientUid, "Cliente"], [providerUid, "Proveedor"]]) {
+          transaction.set(solicitudRef.collection("reminders").doc(recipientRole.toLowerCase()), {
+            requestId: solicitudRef.id,
+            recipientUid,
+            recipientRole,
+            scheduledAt: values.scheduledAt,
+            deliverAt: remindAt,
+            status: "pending",
+            createdAt: timestamp,
+          });
+        }
         result = { id: solicitudRef.id, ...requestData };
       });
 
@@ -428,6 +440,11 @@ export function createRequestService({
           );
         }
 
+        const remindersReference = reference.collection("reminders");
+        const reminderSnapshots = action === "cancel" || action === "reject" || action === "complete"
+          ? await Promise.all(["cliente", "proveedor"].map((role) => transaction.get(remindersReference.doc(role))))
+          : [];
+
         const timestamp = now();
         const eventRef = reference.collection("events").doc();
         transaction.update(reference, {
@@ -443,6 +460,25 @@ export function createRequestService({
           toStatus: transition.to,
           createdAt: timestamp,
         });
+        for (let index = 0; index < reminderSnapshots.length; index += 1) {
+          if (reminderSnapshots[index].exists && reminderSnapshots[index].get("status") === "pending") {
+            transaction.update(reminderSnapshots[index].ref, { status: "cancelled", updatedAt: timestamp });
+          }
+        }
+        const recipientUid = actorRole === "Cliente" ? data.providerUid : data.clientUid;
+        if (typeof recipientUid === "string" && recipientUid) {
+          const notificationRef = collection("notifications").doc();
+          transaction.set(notificationRef, {
+            recipientUid,
+            type: "request_status_changed",
+            requestId,
+            fromStatus: data.status,
+            toStatus: transition.to,
+            actorRole,
+            readAt: null,
+            createdAt: timestamp,
+          });
+        }
         result = {
           ...data,
           status: transition.to,

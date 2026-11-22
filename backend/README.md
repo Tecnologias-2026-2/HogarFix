@@ -63,6 +63,8 @@ Las rutas privadas requieren `Authorization: Bearer <Firebase ID token>`. El mid
 - `PATCH /api/solicitudes/:id/confirmar` y `/cancelar`: confirma solicitudes aceptadas o cancela solicitudes pendientes/aceptadas.
 - `GET /api/provider/solicitudes` y `GET /api/provider/solicitudes/:id`: consulta las solicitudes asignadas al proveedor autenticado.
 - `PATCH /api/provider/solicitudes/:id/aceptar`, `/rechazar`, `/iniciar` y `/completar`: aplica únicamente la transición correspondiente al estado actual.
+- `GET /api/notifications` y `PATCH /api/notifications/:id/read`: lista notificaciones propias y permite marcarlas como leídas.
+- `GET /api/support/faqs` y `POST /api/support/messages`: consulta preguntas frecuentes estáticas y registra un mensaje de soporte (`subject` de 3–120 caracteres y `message` de 10–3000).
 
 Las rutas de identidad devuelven únicamente la identidad asociada al token verificado. Las rutas de perfil devuelven solo los datos del usuario autenticado. Un token ausente/inválido responde 401; un rol o perfil no autorizado responde 403; un fallo de Firebase responde 503.
 
@@ -75,6 +77,10 @@ La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la
 Desde esta carpeta, ejecuta `npm test` para correr explícitamente los cinco archivos unitarios `test/*.test.js`: autenticación, perfiles, rutas de solicitudes, servicio de solicitudes y validación. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
+
+Las transiciones guardan la notificación de estado junto con el cambio y el evento de auditoría en la misma transacción. El destinatario es el otro participante de la solicitud. Las notificaciones se leen filtrando `recipientUid`; el servicio no acepta un UID objetivo del cliente. Los casos de soporte se escriben en `supportMessages` y las FAQs del backend no requieren persistencia.
+
+La creación de una solicitud deja dos documentos `reminders` (uno por participante) bajo la solicitud, con `deliverAt` 24 horas antes del servicio y estado `pending`. Cancelación, rechazo y finalización cambian los recordatorios pendientes a `cancelled`. Esto deja la cola preparada para un worker programado; el backend actual no envía push ni ejecuta un scheduler.
 
 Antes de una integración real, las operaciones de Firestore deben validarse con Firebase Emulator: transacciones y sus reintentos, concurrencia de claves de idempotencia, consultas e índices y persistencia de eventos. Las pruebas del middleware y de autenticación con Firebase también deben verificarse en el entorno de Emulator. Firebase Admin SDK omite Firestore Rules, por lo que las reglas requieren pruebas separadas con un cliente Firebase no administrativo. No se afirma que las pruebas actuales sustituyan esas verificaciones.
 

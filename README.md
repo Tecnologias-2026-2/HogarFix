@@ -375,6 +375,10 @@ Las rutas de identidad `GET /api/client/me` y `GET /api/provider/me`, la gestió
 | PATCH | `/provider/solicitudes/:id/rechazar` | Rechazar solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/iniciar` | Iniciar una solicitud confirmada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/completar` | Finalizar una solicitud en proceso | `{ request: {...} }` |
+| GET | `/notifications` | Notificaciones recientes del usuario autenticado | `{ notifications: [...] }` |
+| PATCH | `/notifications/:id/read` | Marcar como leída una notificación propia | `{ notification: {...} }` |
+| GET | `/support/faqs` | Consultar preguntas frecuentes | `{ faqs: [...] }` |
+| POST | `/support/messages` | Crear un caso de soporte (`subject`, `message`) | `{ message: {...} }` |
 | GET/PATCH | `/profile/me` | Consultar/actualizar datos personales propios | Perfil personal |
 | GET/PATCH | `/provider/profile/me` | Consultar/actualizar datos profesionales propios | Perfil y estados de validación/aprobación |
 | GET | `/provider/eligibility` | Verificar validación, aprobación y cuenta activa | `{ eligibility: {...} }` |
@@ -387,7 +391,8 @@ Reglas importantes para el backend:
 - Las rutas de proveedor y perfil obtienen UID y rol del token Firebase verificado; un proveedor solo puede ver y cambiar solicitudes asignadas a su cuenta.
 - Los perfiles se guardan en `users/{uid}` y `providerProfiles/{uid}`; el cliente no puede enviar UID, rol, validación automática ni aprobación.
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
-- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones se guardan una vez por servicio en `ratings/{serviceId}`; el promedio y la cantidad se mantienen en `providerProfiles/{uid}`. Las notificaciones aún no están implementadas.
+- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones se guardan una vez por servicio en `ratings/{serviceId}`; el promedio y la cantidad se mantienen en `providerProfiles/{uid}`.
+- Cada transición válida de una solicitud escribe de forma atómica su evento y una notificación para la otra persona participante. Las notificaciones se consultan por el UID autenticado y solo su destinatario puede marcarlas como leídas. Al crear una solicitud se preparan recordatorios para cliente y proveedor, con entrega prevista 24 horas antes; cancelación, rechazo o finalización los marca como cancelados para que un worker pueda ignorarlos. Los mensajes de soporte se guardan en `supportMessages`; las preguntas frecuentes son contenido estático del backend.
 
 ### 7.5 Funcionalidades del frontend
 

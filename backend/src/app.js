@@ -4,8 +4,10 @@ import { createAccessRouter } from "./routes/access.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createProfileRouter } from "./routes/profile.js";
 import { createRequestsRouter } from "./routes/requests.js";
+import { createSupportRouter } from "./routes/support.js";
 import { createProfileService } from "./services/profile-service.js";
 import { createRequestService } from "./services/request-service.js";
+import { createSupportService } from "./services/support-service.js";
 
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:5500",
@@ -20,7 +22,7 @@ function getAllowedOrigins() {
   return new Set(configuredOrigins?.length ? configuredOrigins : DEFAULT_CORS_ORIGINS);
 }
 
-export function createApp(authDependencies = {}, { profileService, requestService } = {}) {
+export function createApp(authDependencies = {}, { profileService, requestService, supportService } = {}) {
   const app = express();
   const allowedOrigins = getAllowedOrigins();
 
@@ -51,6 +53,7 @@ export function createApp(authDependencies = {}, { profileService, requestServic
   app.use("/api", createAdminRouter(authDependencies, profiles));
   const requests = requestService || createRequestService({ profileService: profiles });
   app.use("/api", createRequestsRouter(authDependencies, requests));
+  app.use("/api", createSupportRouter(authDependencies, supportService || createSupportService()));
 
   app.use((_request, response) => {
     response.status(404).json({
