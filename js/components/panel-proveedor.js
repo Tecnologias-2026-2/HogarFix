@@ -2,6 +2,8 @@ import {
   USE_REQUESTS_BACKEND,
   cambiarEstadoSolicitud,
   getProviderEligibility,
+  getProviderProfile,
+  getCalificacionesProveedor,
   getSolicitudProveedor,
   getSolicitudesProveedor,
 } from "../services/api.js";
@@ -231,13 +233,7 @@ function renderIncome() {
     `${completed.filter((item) => isCurrentMonth(completedAt(item))).length} completados en las solicitudes cargadas`,
   );
 
-  const ratingCard = document.querySelector("#provider-rating-card");
-  if (ratingCard) {
-    const rating = ratingCard.querySelector("strong");
-    const note = ratingCard.querySelector("small");
-    if (rating) rating.textContent = "No disponible";
-    if (note) note.textContent = "El backend aún no expone reseñas.";
-  }
+  // La tarjeta de calificación la llena load() con los datos de /provider/:uid/calificaciones.
 
   const chart = document.querySelector("#provider-income-chart");
   if (chart) {
@@ -311,11 +307,38 @@ async function load() {
       ? getSolicitudProveedor(requestId)
       : Promise.reject(new Error("No indicaste qué solicitud quieres consultar."))
     : Promise.resolve(null);
-  const [requestsResult, eligibilityResult, detailResult] = await Promise.allSettled([
+  const ratingsPromise = document.querySelector("#provider-rating-card")
+    ? getProviderProfile().then((response) => {
+        const uid = response?.profile?.uid;
+        if (!uid) throw new Error("No se encontró el identificador del proveedor.");
+        return getCalificacionesProveedor(uid);
+      })
+    : Promise.resolve(null);
+  const [requestsResult, eligibilityResult, detailResult, ratingsResult] = await Promise.allSettled([
     requestPromise,
     getProviderEligibility(),
     detailPromise,
+    ratingsPromise,
   ]);
+
+  const ratingCard = document.querySelector("#provider-rating-card");
+  if (ratingCard && ratingsResult.status === "fulfilled" && ratingsResult.value) {
+    const rating = ratingCard.querySelector("strong");
+    const note = ratingCard.querySelector("small");
+    if (rating) {
+      rating.textContent = ratingsResult.value.count
+        ? `★ ${ratingsResult.value.average.toFixed(1)}`
+        : "Sin calificaciones";
+    }
+    if (note) {
+      note.textContent = `${ratingsResult.value.count} ${ratingsResult.value.count === 1 ? "reseña" : "reseñas"} recibidas`;
+    }
+  } else if (ratingCard && ratingsResult.status === "rejected") {
+    const rating = ratingCard.querySelector("strong");
+    const note = ratingCard.querySelector("small");
+    if (rating) rating.textContent = "No disponible";
+    if (note) note.textContent = ratingsResult.reason?.message || "No se pudieron cargar las reseñas.";
+  }
 
   if (eligibilityResult.status === "fulfilled") {
     const result = eligibilityResult.value?.eligibility;
@@ -380,8 +403,8 @@ if (isProviderPage && USE_REQUESTS_BACKEND) {
   if (ratingCard) {
     const rating = ratingCard.querySelector("strong");
     const note = ratingCard.querySelector("small");
-    if (rating) rating.textContent = "No disponible";
-    if (note) note.textContent = "El backend aún no expone reseñas.";
+    if (rating) rating.textContent = "–";
+    if (note) note.textContent = "Cargando reseñas…";
   }
   document.querySelector("#provider-eligibility-banner")?.removeAttribute("hidden");
 

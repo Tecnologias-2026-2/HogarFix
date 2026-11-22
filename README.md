@@ -167,80 +167,144 @@ stateDiagram-v2
 
 ## 🗄️ 6. Modelo de datos
 
-Modelo de las colecciones de Firestore que usa el frontend. Los nombres de campo coinciden con `data/schema.json` y con los datos de demostración de `data/data.js`.
+HogarFix guarda la información en **Cloud Firestore**. El backend (Firebase Admin) es el único que escribe en las colecciones de solicitudes, calificaciones, notificaciones y soporte; el navegador solo lee y edita su propio documento en `users/{uid}` (ver `firestore.rules`). Los nombres de colecciones y campos de este diagrama son los mismos que usa el código en `backend/src/services/` y `js/services/auth.js`.
 
 ```mermaid
 erDiagram
-  USUARIO ||--o| PROVEEDOR : "puede ser"
-  USUARIO ||--o{ SOLICITUD : "crea (cliente)"
-  PROVEEDOR ||--o{ SOLICITUD : "atiende"
-  CATEGORIA ||--o{ SOLICITUD : "define la tarifa de"
-  PROVEEDOR }o--o{ CATEGORIA : "ofrece"
-  SOLICITUD ||--o| CALIFICACION : "recibe"
-  SOLICITUD ||--o{ MENSAJE : "tiene"
-  USUARIO ||--o{ NOTIFICACION : "recibe"
+  users ||--o| providerProfiles : "si es Proveedor"
+  users ||--o{ solicitudes : "crea (clientUid)"
+  providerProfiles ||--o{ solicitudes : "atiende (providerUid)"
+  providerCatalog ||--o{ solicitudes : "se elige en (providerCatalogId)"
+  categories ||--o{ solicitudes : "fija la tarifa (categoryId)"
+  providerProfiles ||--o{ providerCatalog : "aparece en"
+  solicitudes ||--o{ events : "historial de estados"
+  solicitudes ||--o{ reminders : "recordatorios"
+  solicitudes ||--o| ratings : "recibe (mismo id)"
+  solicitudes ||--o{ notifications : "genera"
+  users ||--o{ notifications : "recibe (recipientUid)"
+  users ||--o{ supportMessages : "envía (uid)"
+  solicitudes ||--o| requestIdempotency : "evita duplicados"
 
-  USUARIO {
-    string uid PK
+  users {
+    string uid PK "id del documento = UID de Firebase Auth"
+    string email
     string firstName
     string lastName
-    string email
-    string telefono
-    string rol "Cliente | Proveedor"
+    string phone
+    string role "Cliente | Proveedor"
+    timestamp createdAt
   }
-  PROVEEDOR {
-    string id PK
-    string uid FK
-    string profession
-    string[] categorias
-    number rating
-    number jobs
-    boolean available
-    string zone
-    string availability
+  providerProfiles {
+    string uid PK "mismo UID del usuario"
     string bio
+    number experienceYears
+    string coverageZone
+    string availability
+    string[] services "ids de categories"
+    map automaticValidation "status, missingFields, checkedAt"
+    map adminApproval "status, reviewedAt, reviewedBy"
+    number ratingAverage
+    number ratingCount
+    timestamp updatedAt
   }
-  CATEGORIA {
-    string id PK
-    string nombre
-    string descripcion
-    number tarifa "fija, solo la cambia un administrador"
+  categories {
+    string id PK "plomeria, electricidad, jardineria, aseo-general"
+    string name
+    number fixedPriceCOP "tarifa fija"
+    number durationMinutes
+    boolean active
   }
-  SOLICITUD {
+  providerCatalog {
     string id PK
-    string ownerEmail FK "cliente"
-    string providerId FK
-    string categoriaId FK
+    string providerUid FK
+    boolean active
+  }
+  solicitudes {
+    string id PK
+    number schemaVersion
+    string clientUid FK
+    string providerUid FK
+    string providerCatalogId FK
+    string categoryId FK
+    map categorySnapshot "name, priceCOP, durationMinutes"
+    map providerSnapshot "displayName"
+    string clientDisplayName
     string date
     string time
+    timestamp scheduledAt
+    timestamp scheduledEndAt
+    string timeZone
     string address
     string detail
-    number amount "copiada de la categoría"
-    string status
+    string status "Pendiente, Aceptada, Confirmada, En proceso, Completada, Rechazada, Cancelada"
     timestamp createdAt
-    timestamp confirmedAt
+    timestamp updatedAt
   }
-  CALIFICACION {
-    string id PK
-    string solicitudId FK
-    number estrellas "1 a 5"
-    string comentario
-  }
-  MENSAJE {
-    string id PK
-    string solicitudId FK
-    string sender
-    string text
+  events {
+    string type "created | status_changed"
+    string actorUid
+    string actorRole
+    string fromStatus
+    string toStatus
     timestamp createdAt
   }
-  NOTIFICACION {
+  reminders {
+    string id PK "cliente | proveedor"
+    string requestId FK
+    string recipientUid FK
+    string recipientRole
+    timestamp scheduledAt
+    timestamp deliverAt "24 h antes"
+    string status "pending | cancelled"
+  }
+  ratings {
+    string id PK "= id de la solicitud (una por servicio)"
+    string serviceId FK
+    string clientUid FK
+    string clientDisplayName
+    string providerUid FK
+    number rating "1 a 5"
+    string comment
+    timestamp createdAt
+  }
+  notifications {
+    string id PK
+    string recipientUid FK
+    string type "request_status_changed"
+    string requestId FK
+    string fromStatus
+    string toStatus
+    string actorRole
+    timestamp readAt
+    timestamp createdAt
+  }
+  supportMessages {
     string id PK
     string uid FK
-    string tipo
-    string texto
-    boolean leida
+    string role
+    string subject
+    string message
+    string status "open"
+    timestamp createdAt
+  }
+  requestIdempotency {
+    string id PK "clave Idempotency-Key"
+    string requestId FK
+    string payloadHash
+    timestamp createdAt
   }
 ```
+
+`events` y `reminders` son subcolecciones de cada documento de `solicitudes` (`solicitudes/{id}/events` y `solicitudes/{id}/reminders`). Las preguntas frecuentes del módulo de soporte son contenido fijo del backend y no se guardan en Firestore.
+
+**Reglas del modelo**
+
+- La tarifa no la envía el cliente: el backend copia `fixedPriceCOP` de `categories` en `categorySnapshot.priceCOP` al crear la solicitud.
+- Un proveedor solo recibe solicitudes si su perfil está completo, pasó la validación automática, tiene aprobación administrativa y ofrece esa categoría en `services`.
+- Cada servicio completado admite una sola calificación: el documento de `ratings` usa el mismo id de la solicitud.
+- Cada cambio de estado guarda, en la misma transacción, un `event` y una `notification` para la otra persona.
+
+**Modo demostración:** mientras `js/config.js` no tenga URL de backend, el frontend usa `data/data.js` y guarda solicitudes, perfiles y mensajes en el `localStorage` del navegador, con los nombres de campo de `data/schema.json`.
 
 **Tarifas fijas actuales**
 
@@ -366,12 +430,19 @@ Las rutas de identidad `GET /api/client/me` y `GET /api/provider/me`, la gestió
 | GET | `/solicitudes/:id` | Detalle de una solicitud propia | `{ request: {...} }` |
 | POST | `/solicitudes` | Crear solicitud con `providerCatalogId`, `categoryId`, fecha, hora, dirección y detalle; requiere `Idempotency-Key` | `{ request: {...} }` |
 | PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud aceptada | `{ request: {...} }` |
+| GET | `/solicitudes/:id/calificacion` | Consultar si el cliente ya calificó un servicio propio | `{ rating: {...} }` o `{ rating: null }` |
+| POST | `/solicitudes/:id/calificacion` | Calificar un servicio completado (1–5 estrellas y comentario) | `{ rating: {...} }` |
+| GET | `/provider/:uid/calificaciones` | Consultar promedio, cantidad y reseñas de un proveedor | `{ summary: { average, count, ratings } }` |
 | GET | `/provider/solicitudes` | Solicitudes asignadas al proveedor autenticado | `{ requests: [...] }` |
 | GET | `/provider/solicitudes/:id` | Detalle de una solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/aceptar` | Aceptar solicitud si el proveedor es elegible | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/rechazar` | Rechazar solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/iniciar` | Iniciar una solicitud confirmada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/completar` | Finalizar una solicitud en proceso | `{ request: {...} }` |
+| GET | `/notifications` | Notificaciones recientes del usuario autenticado | `{ notifications: [...] }` |
+| PATCH | `/notifications/:id/read` | Marcar como leída una notificación propia | `{ notification: {...} }` |
+| GET | `/support/faqs` | Consultar preguntas frecuentes | `{ faqs: [...] }` |
+| POST | `/support/messages` | Crear un caso de soporte (`subject`, `message`) | `{ message: {...} }` |
 | GET/PATCH | `/profile/me` | Consultar/actualizar datos personales propios | Perfil personal |
 | GET/PATCH | `/provider/profile/me` | Consultar/actualizar datos profesionales propios | Perfil y estados de validación/aprobación |
 | GET | `/provider/eligibility` | Verificar validación, aprobación y cuenta activa | `{ eligibility: {...} }` |
@@ -384,7 +455,8 @@ Reglas importantes para el backend:
 - Las rutas de proveedor y perfil obtienen UID y rol del token Firebase verificado; un proveedor solo puede ver y cambiar solicitudes asignadas a su cuenta.
 - Los perfiles se guardan en `users/{uid}` y `providerProfiles/{uid}`; el cliente no puede enviar UID, rol, validación automática ni aprobación.
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
-- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones y notificaciones aún no están implementadas.
+- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones se guardan una vez por servicio en `ratings/{serviceId}`; el promedio y la cantidad se mantienen en `providerProfiles/{uid}`.
+- Cada transición válida de una solicitud escribe de forma atómica su evento y una notificación para la otra persona participante. Las notificaciones se consultan por el UID autenticado y solo su destinatario puede marcarlas como leídas. Al crear una solicitud se preparan recordatorios para cliente y proveedor, con entrega prevista 24 horas antes; cancelación, rechazo o finalización los marca como cancelados para que un worker pueda ignorarlos. Los mensajes de soporte se guardan en `supportMessages`; las preguntas frecuentes son contenido estático del backend.
 
 ### 7.5 Funcionalidades del frontend
 
@@ -488,7 +560,7 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | #30 (35) | Perfil del cliente | ✅ Consulta y edición de datos personales |
 | #31 (36) | Perfil del proveedor | ✅ Edición, validación automática y aprobación administrativa |
 | #32 (37) | Contraseñas en el registro | ✅ Mostrar/ocultar y requisitos en vivo |
-| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes backend implementadas; calificaciones y notificaciones en desarrollo |
+| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes y calificaciones backend implementadas; notificaciones en desarrollo |
 
 | #32 (38) | Métodos de pago | ✅ Opciones informativas del modo demostración; integración de cobros pendiente |
 
