@@ -291,6 +291,36 @@ export function getSolicitud(id) {
   );
 }
 
+// GET/POST /solicitudes/:id/calificacion
+export async function getCalificacionSolicitud(id) {
+  const response = await requestsHttp(
+    `/solicitudes/${encodeURIComponent(id)}/calificacion`,
+  );
+  return response?.rating || null;
+}
+
+export async function calificarSolicitud(id, { rating, comment }) {
+  const response = await requestsHttp(
+    `/solicitudes/${encodeURIComponent(id)}/calificacion`,
+    { method: "POST", body: JSON.stringify({ rating, comment }) },
+  );
+  if (!response?.rating || typeof response.rating.id !== "string") {
+    throw new ApiError("El servidor devolvió una calificación con formato inválido.");
+  }
+  return response.rating;
+}
+
+// GET /provider/:uid/calificaciones
+export async function getCalificacionesProveedor(uid) {
+  const response = await requestsHttp(
+    `/provider/${encodeURIComponent(uid)}/calificaciones`,
+  );
+  if (!response?.summary || !Array.isArray(response.summary.ratings)) {
+    throw new ApiError("El servidor devolvió las calificaciones con formato inválido.");
+  }
+  return response.summary;
+}
+
 // POST /solicitudes
 // La tarifa NO se envía desde el formulario: la asigna el servidor según la categoría.
 export function createSolicitud({
@@ -547,6 +577,9 @@ export const api = {
   getProveedor,
   getSolicitudes,
   getSolicitud,
+  getCalificacionSolicitud,
+  calificarSolicitud,
+  getCalificacionesProveedor,
   createSolicitud,
   confirmarSolicitud,
   getMetodosPago,

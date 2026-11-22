@@ -366,6 +366,9 @@ Las rutas de identidad `GET /api/client/me` y `GET /api/provider/me`, la gestió
 | GET | `/solicitudes/:id` | Detalle de una solicitud propia | `{ request: {...} }` |
 | POST | `/solicitudes` | Crear solicitud con `providerCatalogId`, `categoryId`, fecha, hora, dirección y detalle; requiere `Idempotency-Key` | `{ request: {...} }` |
 | PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud aceptada | `{ request: {...} }` |
+| GET | `/solicitudes/:id/calificacion` | Consultar si el cliente ya calificó un servicio propio | `{ rating: {...} }` o `{ rating: null }` |
+| POST | `/solicitudes/:id/calificacion` | Calificar un servicio completado (1–5 estrellas y comentario) | `{ rating: {...} }` |
+| GET | `/provider/:uid/calificaciones` | Consultar promedio, cantidad y reseñas de un proveedor | `{ summary: { average, count, ratings } }` |
 | GET | `/provider/solicitudes` | Solicitudes asignadas al proveedor autenticado | `{ requests: [...] }` |
 | GET | `/provider/solicitudes/:id` | Detalle de una solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/aceptar` | Aceptar solicitud si el proveedor es elegible | `{ request: {...} }` |
@@ -384,7 +387,7 @@ Reglas importantes para el backend:
 - Las rutas de proveedor y perfil obtienen UID y rol del token Firebase verificado; un proveedor solo puede ver y cambiar solicitudes asignadas a su cuenta.
 - Los perfiles se guardan en `users/{uid}` y `providerProfiles/{uid}`; el cliente no puede enviar UID, rol, validación automática ni aprobación.
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
-- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones y notificaciones aún no están implementadas.
+- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones se guardan una vez por servicio en `ratings/{serviceId}`; el promedio y la cantidad se mantienen en `providerProfiles/{uid}`. Las notificaciones aún no están implementadas.
 
 ### 7.5 Funcionalidades del frontend
 
@@ -488,7 +491,7 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | #30 (35) | Perfil del cliente | ✅ Consulta y edición de datos personales |
 | #31 (36) | Perfil del proveedor | ✅ Edición, validación automática y aprobación administrativa |
 | #32 (37) | Contraseñas en el registro | ✅ Mostrar/ocultar y requisitos en vivo |
-| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes backend implementadas; calificaciones y notificaciones en desarrollo |
+| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes y calificaciones backend implementadas; notificaciones en desarrollo |
 
 | #32 (38) | Métodos de pago | ✅ Opciones informativas del modo demostración; integración de cobros pendiente |
 
