@@ -6,6 +6,7 @@ import {
   createRequestError,
   REQUEST_STATUSES,
   validateCreateRequest,
+  validateCreateRating,
   validateIdempotencyKey,
 } from "./request-validation.js";
 
@@ -166,6 +167,7 @@ export function createRequestService({
   const categoryRef = (id) => collection("categories").doc(id);
   const userRef = (uid) => collection("users").doc(uid);
   const providerProfileRef = (uid) => collection("providerProfiles").doc(uid);
+  const ratingRef = (requestId) => collection("ratings").doc(requestId);
 
   async function getIdempotentRequest(reference, expectedPayloadHash, transaction) {
     const keySnapshot = await transaction.get(reference);
@@ -317,6 +319,18 @@ export function createRequestService({
           toStatus: "Pendiente",
           createdAt: timestamp,
         });
+        const remindAt = new Date(values.scheduledAt.getTime() - 24 * 60 * 60 * 1000);
+        for (const [recipientUid, recipientRole] of [[clientUid, "Cliente"], [providerUid, "Proveedor"]]) {
+          transaction.set(solicitudRef.collection("reminders").doc(recipientRole.toLowerCase()), {
+            requestId: solicitudRef.id,
+            recipientUid,
+            recipientRole,
+            scheduledAt: values.scheduledAt,
+            deliverAt: remindAt,
+            status: "pending",
+            createdAt: timestamp,
+          });
+        }
         result = { id: solicitudRef.id, ...requestData };
       });
 
@@ -426,6 +440,11 @@ export function createRequestService({
           );
         }
 
+        const remindersReference = reference.collection("reminders");
+        const reminderSnapshots = action === "cancel" || action === "reject" || action === "complete"
+          ? await Promise.all(["cliente", "proveedor"].map((role) => transaction.get(remindersReference.doc(role))))
+          : [];
+
         const timestamp = now();
         const eventRef = reference.collection("events").doc();
         transaction.update(reference, {
@@ -441,6 +460,25 @@ export function createRequestService({
           toStatus: transition.to,
           createdAt: timestamp,
         });
+        for (let index = 0; index < reminderSnapshots.length; index += 1) {
+          if (reminderSnapshots[index].exists && reminderSnapshots[index].get("status") === "pending") {
+            transaction.update(reminderSnapshots[index].ref, { status: "cancelled", updatedAt: timestamp });
+          }
+        }
+        const recipientUid = actorRole === "Cliente" ? data.providerUid : data.clientUid;
+        if (typeof recipientUid === "string" && recipientUid) {
+          const notificationRef = collection("notifications").doc();
+          transaction.set(notificationRef, {
+            recipientUid,
+            type: "request_status_changed",
+            requestId,
+            fromStatus: data.status,
+            toStatus: transition.to,
+            actorRole,
+            readAt: null,
+            createdAt: timestamp,
+          });
+        }
         result = {
           ...data,
           status: transition.to,
@@ -455,11 +493,126 @@ export function createRequestService({
     }
   }
 
+  async function createRating({ requestId, clientUid, input } = {}) {
+    validateRequestId(requestId);
+    requireUid(clientUid);
+    const values = validateCreateRating(input);
+    const reference = requestRef(requestId);
+    const reviewReference = ratingRef(requestId);
+    try {
+      let result;
+      await firestore().runTransaction(async (transaction) => {
+        const requestSnapshot = await transaction.get(reference);
+        const request = documentData(requestSnapshot);
+        if (!request || request.clientUid !== clientUid) {
+          throw serviceError("No encontramos esa solicitud.", 404, "REQUEST_NOT_FOUND");
+        }
+        if (request.status !== "Completada") {
+          throw serviceError("Solo puedes calificar un servicio completado.", 409, "REQUEST_NOT_COMPLETED");
+        }
+
+        const existingReview = await transaction.get(reviewReference);
+        if (existingReview.exists) {
+          throw serviceError("Este servicio ya tiene una calificación.", 409, "RATING_ALREADY_EXISTS");
+        }
+        if (typeof request.providerUid !== "string" || !request.providerUid) {
+          throw serviceError("No se encontró el proveedor de esta solicitud.", 409, "PROVIDER_NOT_FOUND");
+        }
+
+        const clientSnapshot = await transaction.get(userRef(clientUid));
+        const profileReference = providerProfileRef(request.providerUid);
+        const providerProfileSnapshot = await transaction.get(profileReference);
+        const client = documentData(clientSnapshot) || {};
+        const providerProfile = documentData(providerProfileSnapshot) || {};
+        const previousCount = Number.isInteger(providerProfile.ratingCount)
+          ? providerProfile.ratingCount
+          : 0;
+        const previousAverage = Number.isFinite(providerProfile.ratingAverage)
+          ? providerProfile.ratingAverage
+          : 0;
+        const ratingCount = previousCount + 1;
+        const ratingAverage = (previousAverage * previousCount + values.rating) / ratingCount;
+        const createdAt = now();
+        const clientDisplayName = [client.firstName, client.lastName]
+          .filter((part) => typeof part === "string" && part.trim())
+          .map((part) => part.trim())
+          .join(" ") || "Cliente";
+        const review = {
+          serviceId: requestId,
+          clientUid,
+          clientDisplayName,
+          providerUid: request.providerUid,
+          rating: values.rating,
+          comment: values.comment,
+          createdAt,
+        };
+        transaction.create(reviewReference, review);
+        transaction.set(profileReference, { ratingCount, ratingAverage }, { merge: true });
+        result = { id: requestId, ...review };
+      });
+      return result;
+    } catch (error) {
+      throw safeFirestoreError(error);
+    }
+  }
+
+  async function listProviderRatings({ providerUid } = {}) {
+    requireUid(providerUid);
+    try {
+      const [profileSnapshot, ratingsSnapshot] = await Promise.all([
+        providerProfileRef(providerUid).get(),
+        collection("ratings").where("providerUid", "==", providerUid).get(),
+      ]);
+      const storedProfile = documentData(profileSnapshot) || {};
+      const ratings = ratingsSnapshot.docs
+        .map((document) => ({ id: document.id, ...document.data() }))
+        .sort((a, b) => {
+          const first = a.createdAt?.toMillis?.() ?? new Date(a.createdAt || 0).getTime();
+          const second = b.createdAt?.toMillis?.() ?? new Date(b.createdAt || 0).getTime();
+          return second - first;
+        });
+      const count = ratings.length;
+      const average = count
+        ? ratings.reduce((total, item) => total + item.rating, 0) / count
+        : 0;
+      return {
+        providerUid,
+        average: Number(average.toFixed(2)),
+        count,
+        ratings,
+        storedAverage: storedProfile.ratingAverage ?? 0,
+      };
+    } catch (error) {
+      throw safeFirestoreError(error);
+    }
+  }
+
+  async function getRequestRating({ requestId, clientUid } = {}) {
+    validateRequestId(requestId);
+    requireUid(clientUid);
+    try {
+      const requestSnapshot = await requestRef(requestId).get();
+      const request = documentData(requestSnapshot);
+      if (!request || request.clientUid !== clientUid) {
+        throw serviceError("No encontramos esa solicitud.", 404, "REQUEST_NOT_FOUND");
+      }
+      const reviewSnapshot = await ratingRef(requestId).get();
+      return reviewSnapshot.exists
+        ? { id: reviewSnapshot.id, ...reviewSnapshot.data() }
+        : null;
+    } catch (error) {
+      throw safeFirestoreError(error);
+    }
+  }
+
   return Object.freeze({
     createRequest,
     listRequests,
     getRequest,
     transitionRequest,
+    createRating,
+    listProviderRatings,
+    getRequestRating,
     statuses: REQUEST_STATUSES,
   });
 }
