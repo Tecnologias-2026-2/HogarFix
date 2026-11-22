@@ -115,5 +115,27 @@ export function createRequestControllers(requestService) {
         }),
       "request",
     ),
+    createClientRating: handle(
+      (request) =>
+        requestService.createRating({
+          requestId: request.params.id,
+          clientUid: request.auth.uid,
+          input: request.body,
+        }),
+      "rating",
+      201,
+    ),
+    getClientRequestRating: handle(
+      (request) =>
+        requestService.getRequestRating({
+          requestId: request.params.id,
+          clientUid: request.auth.uid,
+        }),
+      "rating",
+    ),
+    listProviderRatings: handle(
+      (request) => requestService.listProviderRatings({ providerUid: request.params.uid }),
+      "summary",
+    ),
   });
 }

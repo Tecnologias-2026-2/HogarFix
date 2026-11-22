@@ -34,6 +34,21 @@ export function createRequestsRouter(authDependencies, requestService) {
     requireRole("Cliente"),
     controllers.cancelClientRequest,
   );
+  router.get(
+    "/solicitudes/:id/calificacion",
+    requireRole("Cliente"),
+    controllers.getClientRequestRating,
+  );
+  router.post(
+    "/solicitudes/:id/calificacion",
+    requireRole("Cliente"),
+    controllers.createClientRating,
+  );
+  router.get(
+    "/provider/:uid/calificaciones",
+    requireRole("Cliente", "Proveedor"),
+    controllers.listProviderRatings,
+  );
 
   router.get(
     "/provider/solicitudes",
