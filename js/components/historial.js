@@ -1,5 +1,10 @@
 // ISSUE 14. Historial de servicios del cliente (solicitudes.html) y resumen del panel (app.html).
-import { getSolicitudes } from "../services/api.js";
+import {
+  calificarSolicitud,
+  getCalificacionSolicitud,
+  getSolicitudes,
+  USE_REQUESTS_BACKEND,
+} from "../services/api.js";
 import {
   escapeHTML,
   formatCOP,
@@ -20,11 +25,15 @@ const FILTER_GROUPS = { Cancelada: ["Cancelada", "Rechazada"] };
 const list = document.querySelector("#request-list");
 
 function requestCard(item) {
+  const ratingAction = USE_REQUESTS_BACKEND && item.status === "Completada"
+    ? `<button class="button button-small" type="button" data-rating-open="${escapeHTML(item.id)}">Calificar servicio</button><div class="rating-form-slot" data-rating-slot="${escapeHTML(item.id)}"></div>`
+    : "";
   const actions = [
     item.status === "Aceptada"
       ? `<a class="button button-small" href="reserva.html?id=${encodeURIComponent(item.id)}">Confirmar servicio</a>`
       : `<a href="reserva.html?id=${encodeURIComponent(item.id)}">Ver resumen</a>`,
     `<a href="chat.html?persona=${encodeURIComponent(item.provider)}">▢ Chat</a>`,
+    ratingAction,
   ].join("");
   return `
     <article class="client-request-card">
@@ -81,6 +90,68 @@ if (list) {
         ? '<p class="empty-state">No hay solicitudes con estos filtros.</p>'
         : '<p class="empty-state">Aún no tienes solicitudes. <a href="buscar.html">Busca un servicio</a></p>';
   };
+
+  list.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-rating-open]");
+    if (!button) return;
+    const requestId = button.dataset.ratingOpen;
+    const slot = list.querySelector(`[data-rating-slot="${CSS.escape(requestId)}"]`);
+    if (!slot) return;
+    button.disabled = true;
+    slot.textContent = "Cargando calificación…";
+    try {
+      const existing = await getCalificacionSolicitud(requestId);
+      if (existing) {
+        slot.innerHTML = `<p class="form-feedback is-success">Ya calificaste este servicio: ${"★".repeat(existing.rating)} (${existing.rating}/5).</p>`;
+        button.hidden = true;
+        return;
+      }
+      slot.innerHTML = `
+        <form class="rating-form" data-rating-form="${escapeHTML(requestId)}">
+          <label>Calificación
+            <select name="rating" required>
+              <option value="">Selecciona de 1 a 5 estrellas</option>
+              <option value="5">5 estrellas</option><option value="4">4 estrellas</option>
+              <option value="3">3 estrellas</option><option value="2">2 estrellas</option>
+              <option value="1">1 estrella</option>
+            </select>
+          </label>
+          <label>Comentario
+            <textarea name="comment" maxlength="1000" rows="3" placeholder="Cuéntanos cómo fue el servicio"></textarea>
+          </label>
+          <button class="button button-small" type="submit">Enviar calificación</button>
+          <p class="form-feedback" role="status" aria-live="polite"></p>
+        </form>`;
+    } catch (error) {
+      slot.textContent = error.message;
+      button.disabled = false;
+    }
+  });
+
+  list.addEventListener("submit", async (event) => {
+    const form = event.target.closest("[data-rating-form]");
+    if (!form) return;
+    event.preventDefault();
+    const submit = form.querySelector('[type="submit"]');
+    const feedback = form.querySelector(".form-feedback");
+    const rating = Number(form.elements.rating.value);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      feedback.textContent = "Selecciona una calificación de 1 a 5 estrellas.";
+      return;
+    }
+    submit.disabled = true;
+    feedback.textContent = "Guardando tu calificación…";
+    try {
+      const result = await calificarSolicitud(form.dataset.ratingForm, {
+        rating,
+        comment: form.elements.comment.value,
+      });
+      form.innerHTML = `<p class="form-feedback is-success">Gracias por calificar el servicio: ${"★".repeat(result.rating)} (${result.rating}/5).</p>`;
+    } catch (error) {
+      feedback.textContent = error.message;
+      submit.disabled = false;
+    }
+  });
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) showLoading(list, "Cargando tus solicitudes…");
