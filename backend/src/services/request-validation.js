@@ -149,6 +149,28 @@ export function validateCreateRequest(input, { now = new Date() } = {}) {
   };
 }
 
+export function validateCreateRating(input) {
+  if (!isRecord(input)) {
+    throw requestError("Envía la calificación en formato JSON.");
+  }
+  const allowedFields = new Set(["rating", "comment"]);
+  const unknownFields = Object.keys(input).filter((field) => !allowedFields.has(field));
+  if (unknownFields.length) {
+    throw requestError(
+      `No se permiten estos campos de calificación: ${unknownFields.join(", ")}.`,
+      400,
+      "PROTECTED_RATING_FIELDS",
+    );
+  }
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
+    throw requestError("La calificación debe ser un número entero de 1 a 5.", 400, "INVALID_RATING");
+  }
+  if (typeof input.comment !== "string" || input.comment.trim().length > 1000) {
+    throw requestError("El comentario debe ser texto de hasta 1000 caracteres.", 400, "INVALID_RATING_COMMENT");
+  }
+  return { rating: input.rating, comment: input.comment.trim() };
+}
+
 export function createRequestError(message, statusCode, code) {
   return requestError(message, statusCode, code);
 }

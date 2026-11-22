@@ -366,12 +366,19 @@ Las rutas de identidad `GET /api/client/me` y `GET /api/provider/me`, la gestió
 | GET | `/solicitudes/:id` | Detalle de una solicitud propia | `{ request: {...} }` |
 | POST | `/solicitudes` | Crear solicitud con `providerCatalogId`, `categoryId`, fecha, hora, dirección y detalle; requiere `Idempotency-Key` | `{ request: {...} }` |
 | PATCH | `/solicitudes/:id/confirmar` | El cliente confirma una solicitud aceptada | `{ request: {...} }` |
+| GET | `/solicitudes/:id/calificacion` | Consultar si el cliente ya calificó un servicio propio | `{ rating: {...} }` o `{ rating: null }` |
+| POST | `/solicitudes/:id/calificacion` | Calificar un servicio completado (1–5 estrellas y comentario) | `{ rating: {...} }` |
+| GET | `/provider/:uid/calificaciones` | Consultar promedio, cantidad y reseñas de un proveedor | `{ summary: { average, count, ratings } }` |
 | GET | `/provider/solicitudes` | Solicitudes asignadas al proveedor autenticado | `{ requests: [...] }` |
 | GET | `/provider/solicitudes/:id` | Detalle de una solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/aceptar` | Aceptar solicitud si el proveedor es elegible | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/rechazar` | Rechazar solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/iniciar` | Iniciar una solicitud confirmada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/completar` | Finalizar una solicitud en proceso | `{ request: {...} }` |
+| GET | `/notifications` | Notificaciones recientes del usuario autenticado | `{ notifications: [...] }` |
+| PATCH | `/notifications/:id/read` | Marcar como leída una notificación propia | `{ notification: {...} }` |
+| GET | `/support/faqs` | Consultar preguntas frecuentes | `{ faqs: [...] }` |
+| POST | `/support/messages` | Crear un caso de soporte (`subject`, `message`) | `{ message: {...} }` |
 | GET/PATCH | `/profile/me` | Consultar/actualizar datos personales propios | Perfil personal |
 | GET/PATCH | `/provider/profile/me` | Consultar/actualizar datos profesionales propios | Perfil y estados de validación/aprobación |
 | GET | `/provider/eligibility` | Verificar validación, aprobación y cuenta activa | `{ eligibility: {...} }` |
@@ -384,7 +391,8 @@ Reglas importantes para el backend:
 - Las rutas de proveedor y perfil obtienen UID y rol del token Firebase verificado; un proveedor solo puede ver y cambiar solicitudes asignadas a su cuenta.
 - Los perfiles se guardan en `users/{uid}` y `providerProfiles/{uid}`; el cliente no puede enviar UID, rol, validación automática ni aprobación.
 - Los errores deben responder con un código HTTP y `{ "message": "texto para el usuario" }`; el frontend muestra ese mensaje.
-- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones y notificaciones aún no están implementadas.
+- Las rutas de aprobación requieren un custom claim administrativo asignado fuera de la API. Las calificaciones se guardan una vez por servicio en `ratings/{serviceId}`; el promedio y la cantidad se mantienen en `providerProfiles/{uid}`.
+- Cada transición válida de una solicitud escribe de forma atómica su evento y una notificación para la otra persona participante. Las notificaciones se consultan por el UID autenticado y solo su destinatario puede marcarlas como leídas. Al crear una solicitud se preparan recordatorios para cliente y proveedor, con entrega prevista 24 horas antes; cancelación, rechazo o finalización los marca como cancelados para que un worker pueda ignorarlos. Los mensajes de soporte se guardan en `supportMessages`; las preguntas frecuentes son contenido estático del backend.
 
 ### 7.5 Funcionalidades del frontend
 
@@ -488,7 +496,7 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | #30 (35) | Perfil del cliente | ✅ Consulta y edición de datos personales |
 | #31 (36) | Perfil del proveedor | ✅ Edición, validación automática y aprobación administrativa |
 | #32 (37) | Contraseñas en el registro | ✅ Mostrar/ocultar y requisitos en vivo |
-| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes backend implementadas; calificaciones y notificaciones en desarrollo |
+| 15-27 | Solicitudes compartidas, calificaciones, notificaciones | Solicitudes y calificaciones backend implementadas; notificaciones en desarrollo |
 
 | #32 (38) | Métodos de pago | ✅ Opciones informativas del modo demostración; integración de cobros pendiente |
 

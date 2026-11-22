@@ -38,6 +38,9 @@ test("creates a request and its idempotency record and audit event in Firestore"
     [events[0].type, events[0].actorUid, events[0].actorRole, events[0].toStatus],
     ["created", fixture.clientUid, "Cliente", "Pendiente"],
   );
+  const reminders = await fixture.db.collection("solicitudes").doc(created.id).collection("reminders").get();
+  assert.equal(reminders.size, 2);
+  assert.deepEqual(reminders.docs.map((doc) => doc.get("status")), ["pending", "pending"]);
 });
 
 test("lists and returns only owned requests and returns 404 for absent or foreign requests", async (t) => {
@@ -168,6 +171,21 @@ test("persists allowed transitions and each corresponding audit event", async (t
     ["En proceso", "Completada"],
   ]);
   assert.equal(events.length, 5);
+  const reminders = await fixture.db.collection("solicitudes").doc(request.id).collection("reminders").get();
+  assert.deepEqual(reminders.docs.map((document) => document.get("status")), ["cancelled", "cancelled"]);
+  const notifications = await fixture.db.collection("notifications")
+    .where("requestId", "==", request.id).get();
+  assert.equal(notifications.size, 4);
+  assert.deepEqual(
+    notifications.docs.map((document) => [document.get("recipientUid"), document.get("toStatus")])
+      .sort((a, b) => a[1].localeCompare(b[1])),
+    [
+      [fixture.clientUid, "Aceptada"],
+      [fixture.clientUid, "Completada"],
+      [fixture.providerUid, "Confirmada"],
+      [fixture.clientUid, "En proceso"],
+    ].sort((a, b) => a[1].localeCompare(b[1])),
+  );
 
   const rejected = await fixture.createRequest();
   assert.equal((await fixture.service.transitionRequest({
