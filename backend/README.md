@@ -113,7 +113,7 @@ La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la
 
 ## Pruebas automatizadas
 
-Desde esta carpeta, ejecuta `npm test` para correr explícitamente los cinco archivos unitarios `test/*.test.js`: autenticación, perfiles, rutas de solicitudes, servicio de solicitudes y validación. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
+Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 7 archivos de pruebas automatizadas y 60 pruebas aprobadas `test/*.test.js`: autenticación, perfiles, rutas de solicitudes, servicio de solicitudes y validación. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
 
