@@ -459,8 +459,8 @@ Todas las rutas llevan el prefijo `/api`. Las rutas de identidad `GET /api/clien
 | GET | `/provider/eligibility` | Verificar validación, aprobación y cuenta activa | `{ eligibility: {...} }` |
 | GET/PATCH | `/provider/especialidades` | Consultar/actualizar las categorías que ofrece el proveedor | Especialidades del proveedor |
 | GET/PATCH | `/provider/disponibilidad` | Consultar/actualizar días y horarios de atención | Disponibilidad del proveedor |
-| GET | `/provider/earnings` | Resumen de ingresos estimados del proveedor (servicios completados) | Totales del periodo |
-| GET | `/provider/earnings/breakdown` | Detalle de ingresos por servicio | Lista de servicios completados |
+| GET | `/provider/earnings` | Ingresos del proveedor por servicios con pago confirmado, filtrables por fechas | Totales del periodo |
+| GET | `/provider/earnings/breakdown` | Ingresos agrupados por día, mes o año | Desglose por periodo |
 | PATCH | `/admin/providers/:uid/approval` | Decisión administrativa (claim `admin: true`) | Estado de aprobación actualizado |
 
 Reglas importantes para el backend:
@@ -592,12 +592,10 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | #32 (38) | Métodos de pago | ✅ Opciones informativas del modo demostración; integración de cobros pendiente |
 | 15-18 | Rutas, controladores y gestión de solicitudes | ✅ Crear, confirmar, cancelar, aceptar, rechazar, iniciar y completar, con eventos de estado |
 | 19 | Especialidades y disponibilidad del proveedor | ✅ Endpoints `/provider/especialidades` y `/provider/disponibilidad` |
-| 20 | Ingresos del proveedor | ✅ Endpoints `/provider/earnings` y `/provider/earnings/breakdown` |
+| 20 | Ingresos del proveedor | ✅ Endpoints `/provider/earnings` y `/provider/earnings/breakdown` (cuentan solo pagos confirmados) |
 | 21 | Validaciones y manejo de errores | ✅ Middleware `validate` y `error-handler` con formato común |
 | 22 | Modelo de datos | ✅ Sección 6 de este README |
 | 23-24 | Firebase Admin y operaciones en Firestore | ✅ Configuración centralizada y servicios del backend |
 | 25 | Calificaciones de proveedores | ✅ 1 a 5 estrellas, una por servicio y promedio por proveedor |
 | 26 | Notificaciones y soporte | ✅ Notificaciones por cambio de estado, recordatorios, FAQs y mensajes de soporte (API; sin pantalla propia) |
 | 27 | Pruebas e integración | 🟡 En curso: pruebas automatizadas del backend en verde; falta la evidencia con Postman/Thunder Client |
-
-Las categorías y proveedores continúan siendo datos de demostración porque el backend aún no expone un catálogo HTTP real. No se deben usar sus identificadores para crear solicitudes reales hasta contar con asociaciones de catálogo verificadas.

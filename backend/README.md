@@ -78,8 +78,8 @@ Todas las rutas utilizan el prefijo `/api`.
 | PATCH | `/api/provider/solicitudes/:id/completar` | Proveedor autenticado | Marca un servicio como completado |
 | GET/PATCH | `/api/provider/especialidades` | Proveedor autenticado | Consulta/actualiza las categorías que ofrece |
 | GET/PATCH | `/api/provider/disponibilidad` | Proveedor autenticado | Consulta/actualiza días y horarios de atención |
-| GET | `/api/provider/earnings` | Proveedor autenticado | Resumen de ingresos estimados |
-| GET | `/api/provider/earnings/breakdown` | Proveedor autenticado | Detalle de ingresos por servicio |
+| GET | `/api/provider/earnings` | Proveedor autenticado | Ingresos por servicios con pago confirmado |
+| GET | `/api/provider/earnings/breakdown` | Proveedor autenticado | Ingresos agrupados por día, mes o año |
 | GET | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Consulta la calificación de un servicio propio |
 | POST | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Califica un servicio completado (1 a 5) |
 | GET | `/api/provider/:uid/calificaciones` | Usuario autenticado | Promedio y reseñas de un proveedor |
