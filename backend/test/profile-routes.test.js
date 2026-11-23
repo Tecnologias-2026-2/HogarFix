@@ -333,3 +333,193 @@ test("configured frontend origin can preflight authenticated profile updates", a
     else process.env.CORS_ORIGINS = previousOrigins;
   }
 });
+
+test("ISSUE 19: provider can update and consult specialties", async () => {
+  const { app, db } = createTestApp();
+
+  await withServer(app, async (baseUrl) => {
+    const update = await request(
+      baseUrl,
+      "/api/provider/especialidades?uid=client-uid",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          services: ["plomeria", "electricidad"],
+        }),
+      },
+    );
+
+    assert.equal(update.status, 200);
+    assert.deepEqual((await update.json()).services, [
+      "plomeria",
+      "electricidad",
+    ]);
+
+    const saved = db.read("providerProfiles", "provider-uid");
+    assert.deepEqual(saved.services, ["plomeria", "electricidad"]);
+    assert.equal(db.read("providerProfiles", "client-uid"), undefined);
+
+    const consult = await request(
+      baseUrl,
+      "/api/provider/especialidades",
+      "provider-token",
+    );
+
+    assert.equal(consult.status, 200);
+    assert.deepEqual((await consult.json()).services, [
+      "plomeria",
+      "electricidad",
+    ]);
+  });
+});
+
+test("ISSUE 19: provider can update and consult availability", async () => {
+  const { app, db } = createTestApp();
+
+  await withServer(app, async (baseUrl) => {
+    const update = await request(
+      baseUrl,
+      "/api/provider/disponibilidad",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          availability: "Lunes a viernes de 8:00 a 17:00",
+        }),
+      },
+    );
+
+    assert.equal(update.status, 200);
+    assert.equal(
+      (await update.json()).availability,
+      "Lunes a viernes de 8:00 a 17:00",
+    );
+
+    assert.equal(
+      db.read("providerProfiles", "provider-uid").availability,
+      "Lunes a viernes de 8:00 a 17:00",
+    );
+
+    const consult = await request(
+      baseUrl,
+      "/api/provider/disponibilidad",
+      "provider-token",
+    );
+
+    assert.equal(consult.status, 200);
+    assert.equal(
+      (await consult.json()).availability,
+      "Lunes a viernes de 8:00 a 17:00",
+    );
+  });
+});
+
+test("ISSUE 19: specialties and availability enforce validation and permissions", async () => {
+  const { app, db } = createTestApp();
+
+  await withServer(app, async (baseUrl) => {
+    const clientUpdate = await request(
+      baseUrl,
+      "/api/provider/especialidades",
+      "client-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ services: ["plomeria"] }),
+      },
+    );
+
+    assert.equal(clientUpdate.status, 403);
+
+    const clientRead = await request(
+      baseUrl,
+      "/api/provider/disponibilidad",
+      "client-token",
+    );
+
+    assert.equal(clientRead.status, 403);
+
+    const invalidServices = await request(
+      baseUrl,
+      "/api/provider/especialidades",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ services: ["categoria-inexistente"] }),
+      },
+    );
+
+    assert.equal(invalidServices.status, 400);
+
+    const duplicatedServices = await request(
+      baseUrl,
+      "/api/provider/especialidades",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ services: ["plomeria", "plomeria"] }),
+      },
+    );
+
+    assert.equal(duplicatedServices.status, 400);
+
+    const invalidAvailability = await request(
+      baseUrl,
+      "/api/provider/disponibilidad",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({ availability: 123 }),
+      },
+    );
+
+    assert.equal(invalidAvailability.status, 400);
+
+    const missingAvailability = await request(
+      baseUrl,
+      "/api/provider/disponibilidad",
+      "provider-token",
+      {
+        method: "PATCH",
+        body: JSON.stringify({}),
+      },
+    );
+
+    assert.equal(missingAvailability.status, 400);
+
+    const extraSpecialtiesField = await request(
+  baseUrl,
+  "/api/provider/especialidades",
+  "provider-token",
+  {
+    method: "PATCH",
+    body: JSON.stringify({
+      services: ["plomeria"],
+      availability: "Lunes a viernes",
+    }),
+  },
+);
+
+assert.equal(extraSpecialtiesField.status, 400);
+
+const extraAvailabilityField = await request(
+  baseUrl,
+  "/api/provider/disponibilidad",
+  "provider-token",
+  {
+    method: "PATCH",
+    body: JSON.stringify({
+      availability: "Lunes a viernes",
+      services: ["plomeria"],
+    }),
+  },
+);
+
+assert.equal(extraAvailabilityField.status, 400);
+
+    assert.equal(
+      db.read("providerProfiles", "provider-uid"),
+      undefined,
+    );
+  });
+});

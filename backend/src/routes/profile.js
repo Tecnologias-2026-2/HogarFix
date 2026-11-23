@@ -6,6 +6,10 @@ import {
   getProviderProfile,
   updateMyProfile,
   updateProviderProfile,
+  getProviderSpecialties,
+  updateProviderSpecialties,
+  getProviderAvailability,
+  updateProviderAvailability,
 } from "../controllers/profile-controller.js";
 
 export function createProfileRouter(authDependencies, profileService) {
@@ -31,6 +35,34 @@ export function createProfileRouter(authDependencies, profileService) {
     authenticateRequest,
     requireRole("Proveedor"),
     getProviderEligibility(profileService),
+  );
+
+  router.get(
+    "/provider/especialidades",
+    authenticateRequest,
+    requireRole("Proveedor"),
+    getProviderSpecialties(profileService),
+  );
+
+  router.patch(
+    "/provider/especialidades",
+    authenticateRequest,
+    requireRole("Proveedor"),
+    updateProviderSpecialties(profileService),
+  );
+
+  router.get(
+    "/provider/disponibilidad",
+    authenticateRequest,
+    requireRole("Proveedor"),
+    getProviderAvailability(profileService),
+  );
+
+  router.patch(
+    "/provider/disponibilidad",
+    authenticateRequest,
+    requireRole("Proveedor"),
+    updateProviderAvailability(profileService),
   );
 
   return router;
