@@ -8,6 +8,8 @@ import { createSupportRouter } from "./routes/support.js";
 import { createProfileService } from "./services/profile-service.js";
 import { createRequestService } from "./services/request-service.js";
 import { createSupportService } from "./services/support-service.js";
+import { createEarningsRouter } from "./routes/earnings.js";
+import { createEarningsService } from "./services/earnings-service.js";
 
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:5500",
@@ -22,7 +24,10 @@ function getAllowedOrigins() {
   return new Set(configuredOrigins?.length ? configuredOrigins : DEFAULT_CORS_ORIGINS);
 }
 
-export function createApp(authDependencies = {}, { profileService, requestService, supportService } = {}) {
+export function createApp(
+  authDependencies = {},
+  { profileService, requestService, supportService, earningsService } = {}
+) {
   const app = express();
   const allowedOrigins = getAllowedOrigins();
 
@@ -53,6 +58,8 @@ export function createApp(authDependencies = {}, { profileService, requestServic
   app.use("/api", createAdminRouter(authDependencies, profiles));
   const requests = requestService || createRequestService({ profileService: profiles });
   app.use("/api", createRequestsRouter(authDependencies, requests));
+  const earnings = earningsService || createEarningsService();
+  app.use("/api", createEarningsRouter(authDependencies, earnings));
   app.use("/api", createSupportRouter(authDependencies, supportService || createSupportService()));
 
   app.use((_request, response) => {
