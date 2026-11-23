@@ -415,7 +415,6 @@ HogarFix/
 │       ├── routes/admin.js     Aprobación administrativa de proveedores
 │       ├── services/           Validación y persistencia de perfiles
 │       └── server.js           Inicio del servidor y configuración del puerto
-├── .github/workflows/pages.yml  Publicación automática en GitHub Pages
 ├── .env.example               Variables de entorno de ejemplo
 └── .prettierrc.json           Formato común del código
 ```
@@ -519,9 +518,11 @@ En modo demostración, el formulario conserva la selección del método de pago 
 
 ## 🌍 9. Despliegue
 
-El frontend se publica en **GitHub Pages** con el flujo `.github/workflows/pages.yml`, que se ejecuta en cada push a `main` (o a mano desde la pestaña *Actions*). El workflow conserva las rutas actuales del frontend y no publica la carpeta `backend/`.
+El frontend se publica en **GitHub Pages** directamente desde la rama `main`: cada push a `main` dispara el proceso automático de GitHub *"pages build and deployment"* (pestaña *Actions*) y en uno o dos minutos el sitio queda actualizado.
 
-Configuración inicial (una sola vez, la hace quien administra el repositorio): **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Configuración (ya está hecha; la cambia solo quien administra el repositorio): **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `main`, carpeta `/ (root)`.
+
+Como se publica la raíz del repositorio, la carpeta `backend/` también queda visible como archivos estáticos (sin ejecutarse). No contiene secretos: las credenciales van en `.env`, que está excluido por `.gitignore`.
 
 El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 
