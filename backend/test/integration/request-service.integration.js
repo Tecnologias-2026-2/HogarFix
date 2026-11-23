@@ -204,6 +204,207 @@ test("persists allowed transitions and each corresponding audit event", async (t
   })).status, "Cancelada");
 });
 
+test("prevents a provider from accepting overlapping requests", async (t) => {
+  const fixture = await fixtureFor(t);
+
+  const first = await fixture.createRequest();
+  const second = await fixture.createRequest();
+
+  const accepted = await fixture.service.transitionRequest({
+    requestId: first.id,
+    actorUid: fixture.providerUid,
+    actorRole: "Proveedor",
+    action: "accept",
+  });
+
+  assert.equal(accepted.status, "Aceptada");
+
+  await assert.rejects(
+    fixture.service.transitionRequest({
+      requestId: second.id,
+      actorUid: fixture.providerUid,
+      actorRole: "Proveedor",
+      action: "accept",
+    }),
+    (error) =>
+      error.statusCode === 409 &&
+      error.code === "PROVIDER_SCHEDULE_CONFLICT",
+  );
+
+  const stored = await fixture.db
+    .collection("solicitudes")
+    .doc(second.id)
+    .get();
+
+  assert.equal(stored.get("status"), "Pendiente");
+  assert.equal((await fixture.eventsFor(second.id)).length, 1);
+});
+
+
+test("prevents concurrent acceptance of overlapping requests", async (t) => {
+  const fixture = await fixtureFor(t);
+
+  const first = await fixture.createRequest();
+  const second = await fixture.createRequest();
+
+  const results = await Promise.allSettled([
+    fixture.service.transitionRequest({
+      requestId: first.id,
+      actorUid: fixture.providerUid,
+      actorRole: "Proveedor",
+      action: "accept",
+    }),
+    fixture.service.transitionRequest({
+      requestId: second.id,
+      actorUid: fixture.providerUid,
+      actorRole: "Proveedor",
+      action: "accept",
+    }),
+  ]);
+
+  const accepted = results.filter((result) => result.status === "fulfilled");
+  const rejected = results.filter((result) => result.status === "rejected");
+
+  assert.equal(accepted.length, 1);
+  assert.equal(rejected.length, 1);
+
+  assert.equal(accepted[0].value.status, "Aceptada");
+  assert.equal(rejected[0].reason.statusCode, 409);
+  assert.equal(rejected[0].reason.code, "PROVIDER_SCHEDULE_CONFLICT");
+
+  const firstStored = await fixture.db.collection("solicitudes").doc(first.id).get();
+  const secondStored = await fixture.db.collection("solicitudes").doc(second.id).get();
+
+  const statuses = [firstStored.get("status"), secondStored.get("status")].sort();
+
+  assert.deepEqual(statuses, ["Aceptada", "Pendiente"].sort());
+});
+
+
+test("releases provider schedule after cancellation", async (t) => {
+  const fixture = await fixtureFor(t);
+
+  const first = await fixture.createRequest();
+  const second = await fixture.createRequest();
+
+  await fixture.service.transitionRequest({
+    requestId: first.id,
+    actorUid: fixture.providerUid,
+    actorRole: "Proveedor",
+    action: "accept",
+  });
+
+  await fixture.service.transitionRequest({
+    requestId: first.id,
+    actorUid: fixture.clientUid,
+    actorRole: "Cliente",
+    action: "cancel",
+  });
+
+  const accepted = await fixture.service.transitionRequest({
+    requestId: second.id,
+    actorUid: fixture.providerUid,
+    actorRole: "Proveedor",
+    action: "accept",
+  });
+
+  assert.equal(accepted.status, "Aceptada");
+
+  const firstStored = await fixture.db.collection("solicitudes").doc(first.id).get();
+  const secondStored = await fixture.db.collection("solicitudes").doc(second.id).get();
+
+  assert.equal(firstStored.get("status"), "Cancelada");
+  assert.equal(secondStored.get("status"), "Aceptada");
+});
+
+
+test("releases provider schedule after completion", async (t) => {
+  const fixture = await fixtureFor(t);
+
+  const first = await fixture.createRequest();
+  const second = await fixture.createRequest();
+
+  const transitions = [
+    ["Proveedor", fixture.providerUid, "accept"],
+    ["Cliente", fixture.clientUid, "confirm"],
+    ["Proveedor", fixture.providerUid, "start"],
+    ["Proveedor", fixture.providerUid, "complete"],
+  ];
+
+  for (const [actorRole, actorUid, action] of transitions) {
+    await fixture.service.transitionRequest({
+      requestId: first.id,
+      actorUid,
+      actorRole,
+      action,
+    });
+  }
+
+  const accepted = await fixture.service.transitionRequest({
+    requestId: second.id,
+    actorUid: fixture.providerUid,
+    actorRole: "Proveedor",
+    action: "accept",
+  });
+
+  assert.equal(accepted.status, "Aceptada");
+
+  const firstStored = await fixture.db.collection("solicitudes").doc(first.id).get();
+  const secondStored = await fixture.db.collection("solicitudes").doc(second.id).get();
+
+  assert.equal(firstStored.get("status"), "Completada");
+  assert.equal(secondStored.get("status"), "Aceptada");
+});
+
+
+test("handles concurrent cancellation and acceptance", async (t) => {
+  const fixture = await fixtureFor(t);
+
+  const first = await fixture.createRequest();
+  const second = await fixture.createRequest();
+
+  await fixture.service.transitionRequest({
+    requestId: first.id,
+    actorUid: fixture.providerUid,
+    actorRole: "Proveedor",
+    action: "accept",
+  });
+
+  const results = await Promise.allSettled([
+    fixture.service.transitionRequest({
+      requestId: first.id,
+      actorUid: fixture.clientUid,
+      actorRole: "Cliente",
+      action: "cancel",
+    }),
+    fixture.service.transitionRequest({
+      requestId: second.id,
+      actorUid: fixture.providerUid,
+      actorRole: "Proveedor",
+      action: "accept",
+    }),
+  ]);
+
+  assert.equal(results[0].status, "fulfilled");
+
+  const firstStored = await fixture.db
+    .collection("solicitudes").doc(first.id).get();
+
+  const secondStored = await fixture.db
+    .collection("solicitudes").doc(second.id).get();
+
+  assert.equal(firstStored.get("status"), "Cancelada");
+
+  if (results[1].status === "fulfilled") {
+    assert.equal(secondStored.get("status"), "Aceptada");
+  } else {
+    assert.equal(results[1].reason.statusCode, 409);
+    assert.equal(results[1].reason.code, "PROVIDER_SCHEDULE_CONFLICT");
+    assert.equal(secondStored.get("status"), "Pendiente");
+  }
+});
+
+
 test("invalid transitions leave Firestore state and audit events unchanged", async (t) => {
   const fixture = await fixtureFor(t);
   const request = await fixture.createRequest();

@@ -126,6 +126,48 @@ function validateProviderProfile(userData, profileData, categoryId) {
   }
 }
 
+
+const BUSY_REQUEST_STATUSES = new Set([
+  "Aceptada",
+  "Confirmada",
+  "En proceso",
+]);
+
+
+function scheduleTime(value) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+
+  if (value && typeof value.toMillis === "function") {
+    return value.toMillis();
+  }
+
+  return NaN;
+}
+
+function schedulesOverlap(firstStart, firstEnd, secondStart, secondEnd) {
+  const startA = scheduleTime(firstStart);
+  const endA = scheduleTime(firstEnd);
+  const startB = scheduleTime(secondStart);
+  const endB = scheduleTime(secondEnd);
+
+  if (
+    [startA, endA, startB, endB].some((value) => !Number.isFinite(value))
+    || startA >= endA
+    || startB >= endB
+  ) {
+    throw serviceError(
+      "No se pudo validar el horario de la solicitud.",
+      409,
+      "INVALID_REQUEST_SCHEDULE",
+    );
+  }
+
+  return startA < endB && endA > startB;
+}
+
+
 function validateListLimit(value) {
   if (value === undefined) return DEFAULT_LIST_LIMIT;
   if (!Number.isInteger(value) || value < 1 || value > MAX_LIST_LIMIT) {
@@ -168,6 +210,7 @@ export function createRequestService({
   const userRef = (uid) => collection("users").doc(uid);
   const providerProfileRef = (uid) => collection("providerProfiles").doc(uid);
   const ratingRef = (requestId) => collection("ratings").doc(requestId);
+  const providerScheduleRef = (uid) => collection("providerSchedules").doc(uid);
 
   async function getIdempotentRequest(reference, expectedPayloadHash, transaction) {
     const keySnapshot = await transaction.get(reference);
@@ -375,6 +418,37 @@ export function createRequestService({
     }
   }
 
+async function checkProviderSchedule(transaction, providerUid, requestId, requestData) {
+  const snapshot = await transaction.get(
+    collection("solicitudes").where("providerUid", "==", providerUid),
+  );
+
+  for (const document of snapshot.docs) {
+    if (document.id === requestId) continue;
+
+    const existing = document.data();
+
+    if (!BUSY_REQUEST_STATUSES.has(existing.status)) continue;
+
+    if (
+      schedulesOverlap(
+        requestData.scheduledAt,
+        requestData.scheduledEndAt,
+        existing.scheduledAt,
+        existing.scheduledEndAt,
+      )
+    ) {
+      throw serviceError(
+        "El proveedor ya tiene un servicio asignado en ese horario.",
+        409,
+        "PROVIDER_SCHEDULE_CONFLICT",
+      );
+    }
+  }
+}
+
+
+
   async function checkAcceptanceEligibility(requestId, actorUid) {
     const snapshot = await requestRef(requestId).get();
     const data = documentData(snapshot);
@@ -408,6 +482,7 @@ export function createRequestService({
 
       let result;
       await firestore().runTransaction(async (transaction) => {
+        let scheduleSnapshot
         const snapshot = await transaction.get(reference);
         const data = documentData(snapshot);
         if (!data) throw serviceError("No encontramos esa solicitud.", 404, "REQUEST_NOT_FOUND");
@@ -421,6 +496,16 @@ export function createRequestService({
           const categorySnapshot = await transaction.get(categoryRef(data.categoryId));
           const providerUserSnapshot = await transaction.get(userRef(actorUid));
           const providerProfileSnapshot = await transaction.get(providerProfileRef(actorUid));
+
+          const scheduleReference = providerScheduleRef(actorUid);
+          scheduleSnapshot = await transaction.get(scheduleReference);
+
+          await checkProviderSchedule(
+            transaction,
+            actorUid,
+            requestId,
+            data,
+          );
           if (validateCatalogLink(documentData(catalogSnapshot)) !== actorUid) {
             throw serviceError("El proveedor no está habilitado para esta solicitud.", 409, "PROVIDER_NOT_ELIGIBLE");
           }
@@ -440,6 +525,15 @@ export function createRequestService({
           );
         }
 
+        if (
+          (action === "cancel" && BUSY_REQUEST_STATUSES.has(data.status))
+          || action === "complete"
+        ) {
+          scheduleSnapshot = await transaction.get(
+           providerScheduleRef(data.providerUid)
+          );
+        }
+
         const remindersReference = reference.collection("reminders");
         const reminderSnapshots = action === "cancel" || action === "reject" || action === "complete"
           ? await Promise.all(["cliente", "proveedor"].map((role) => transaction.get(remindersReference.doc(role))))
@@ -452,6 +546,22 @@ export function createRequestService({
           updatedAt: timestamp,
           [transition.timestamp]: timestamp,
         });
+        const changesProviderSchedule =
+          action === "accept"
+          || (action === "cancel" && data.status === "Aceptada")
+          || action === "complete";
+
+        if (changesProviderSchedule) {
+          transaction.set(
+            providerScheduleRef(data.providerUid),
+            {
+              version: (scheduleSnapshot?.get("version") || 0) + 1,
+              updatedAt: timestamp,
+            },
+            { merge: true },
+          );
+        }
+
         transaction.set(eventRef, {
           type: "status_changed",
           actorUid,
