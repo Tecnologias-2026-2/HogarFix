@@ -10,6 +10,10 @@ import { createRequestService } from "./services/request-service.js";
 import { createSupportService } from "./services/support-service.js";
 import { createEarningsRouter } from "./routes/earnings.js";
 import { createEarningsService } from "./services/earnings-service.js";
+import {
+  notFoundHandler,
+  errorHandler
+} from "./middlewares/error-handler.js";
 
 const DEFAULT_CORS_ORIGINS = [
   "http://localhost:5500",
@@ -62,31 +66,8 @@ export function createApp(
   app.use("/api", createEarningsRouter(authDependencies, earnings));
   app.use("/api", createSupportRouter(authDependencies, supportService || createSupportService()));
 
-  app.use((_request, response) => {
-    response.status(404).json({
-      status: "error",
-      message: "Ruta no encontrada",
-    });
-  });
-
-  app.use((error, _request, response, next) => {
-    if (response.headersSent) return next(error);
-
-    const status = Number(error.statusCode || error.status);
-    const isClientError = Number.isInteger(status) && status >= 400 && status < 500;
-    const message = isClientError
-      ? error.type === "entity.parse.failed"
-        ? "El cuerpo de la solicitud no contiene JSON válido."
-        : error.message
-      : "Error interno del servidor.";
-
-    if (!isClientError) console.error(error);
-
-    response.status(isClientError ? status : 500).json({
-      status: "error",
-      message,
-    });
-  });
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 }

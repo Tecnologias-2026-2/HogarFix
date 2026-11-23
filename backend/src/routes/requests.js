@@ -2,6 +2,8 @@
 import express from "express";
 import { authenticate, requireRole } from "../middlewares/auth.js";
 import { createRequestControllers } from "../controllers/request-controller.js";
+import { validate } from "../middlewares/validate.js";
+import { validateCreateRequest } from "../services/request-validation.js";
 
 export function createRequestsRouter(authDependencies, requestService) {
   const router = express.Router();
@@ -12,8 +14,11 @@ export function createRequestsRouter(authDependencies, requestService) {
     "/solicitudes",
     authenticateRequest,
     requireRole("Cliente"),
+    validate((body) => validateCreateRequest(body)),
     controllers.createClientRequest,
   );
+
+
   router.get(
     "/solicitudes",
     authenticateRequest,

@@ -7,7 +7,17 @@ const FAQS = Object.freeze([
 ]);
 
 function inputError(message, statusCode = 400) {
-  return Object.assign(new Error(message), { statusCode });
+  const code =
+    statusCode === 404
+      ? "SUPPORT_NOT_FOUND"
+      : statusCode === 403
+        ? "FORBIDDEN"
+        : "INVALID_SUPPORT_INPUT";
+
+  return Object.assign(new Error(message), {
+    statusCode,
+    code
+  });
 }
 
 function validUid(uid) {

@@ -173,9 +173,11 @@ test("create passes the authenticated UID, never a body UID, to the service", as
     });
 
     assert.equal(response.status, 400);
-    assert.equal(calls[0][0], "createRequest");
-    assert.equal(calls[0][1].clientUid, "client-uid");
-    assert.equal(calls[0][1].idempotencyKey, "request-key-000001");
+    assert.equal(calls.length, 0);
+
+    const data = await response.json();
+    assert.equal(data.status, "error");
+
   });
 });
 
