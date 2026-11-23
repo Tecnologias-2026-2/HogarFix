@@ -76,6 +76,17 @@ Todas las rutas utilizan el prefijo `/api`.
 | PATCH | `/api/provider/solicitudes/:id/rechazar` | Proveedor autenticado | Rechaza una solicitud |
 | PATCH | `/api/provider/solicitudes/:id/iniciar` | Proveedor autenticado | Inicia un servicio |
 | PATCH | `/api/provider/solicitudes/:id/completar` | Proveedor autenticado | Marca un servicio como completado |
+| GET/PATCH | `/api/provider/especialidades` | Proveedor autenticado | Consulta/actualiza las categorías que ofrece |
+| GET/PATCH | `/api/provider/disponibilidad` | Proveedor autenticado | Consulta/actualiza días y horarios de atención |
+| GET | `/api/provider/earnings` | Proveedor autenticado | Resumen de ingresos estimados |
+| GET | `/api/provider/earnings/breakdown` | Proveedor autenticado | Detalle de ingresos por servicio |
+| GET | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Consulta la calificación de un servicio propio |
+| POST | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Califica un servicio completado (1 a 5) |
+| GET | `/api/provider/:uid/calificaciones` | Usuario autenticado | Promedio y reseñas de un proveedor |
+| GET | `/api/notifications` | Usuario autenticado | Lista las notificaciones propias |
+| PATCH | `/api/notifications/:id/read` | Usuario autenticado | Marca como leída una notificación propia |
+| GET | `/api/support/faqs` | Usuario autenticado | Preguntas frecuentes |
+| POST | `/api/support/messages` | Usuario autenticado | Crea un caso de soporte |
 
 ### Convenciones de la API
 
@@ -109,11 +120,11 @@ Las rutas de identidad devuelven únicamente la identidad asociada al token veri
 
 Las rutas de solicitudes pasan al servicio únicamente `request.auth.uid` y `request.auth.role`; no toman identidad ni rol del body, query o ruta. El servicio verifica la propiedad/asignación y responde 404 para solicitudes ajenas. La creación usa `providerCatalog/{catalogId}` y `categories/{categoryId}` administrados en Firestore; no hay asociaciones ni categorías sembradas por estas rutas.
 
-La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la transacción Firestore. Firebase Authentication y Firestore no comparten una transacción atómica; una cuenta podría deshabilitarse entre esa comprobación y el commit. La aceptación vuelve a comprobar elegibilidad antes de la transacción y vuelve a validar el perfil dentro de ella, pero no elimina esa ventana para el estado de Authentication. La disponibilidad horaria no se comprueba ni se reserva automáticamente.
+La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la transacción Firestore. Firebase Authentication y Firestore no comparten una transacción atómica; una cuenta podría deshabilitarse entre esa comprobación y el commit. La aceptación vuelve a comprobar elegibilidad antes de la transacción y vuelve a validar el perfil dentro de ella, pero no elimina esa ventana para el estado de Authentication. Al aceptar, el servicio rechaza la solicitud si el proveedor ya tiene otro servicio asignado en ese horario (`PROVIDER_SCHEDULE_CONFLICT`).
 
 ## Pruebas automatizadas
 
-Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 7 archivos de pruebas automatizadas y 60 pruebas aprobadas `test/*.test.js`: autenticación, perfiles, rutas de solicitudes, servicio de solicitudes y validación. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
+Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 9 archivos de pruebas automatizadas `test/*.test.js`: aplicación, manejo de errores, autenticación, perfiles, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
 
