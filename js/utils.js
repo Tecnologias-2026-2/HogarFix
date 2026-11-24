@@ -26,6 +26,14 @@ export function formatDate(isoDate) {
   });
 }
 
+// "13:00" -> "1:00 p. m." (la API guarda la hora en 24 h; la pantalla la muestra en 12 h).
+export function formatTime(value) {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(value || ""));
+  if (!match) return value || "";
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour < 12 ? "a. m." : "p. m."}`;
+}
+
 export function formatDateTime(iso) {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())

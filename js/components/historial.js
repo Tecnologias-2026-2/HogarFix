@@ -15,6 +15,7 @@ import {
   showLoading,
   showError,
   doneLoading,
+  formatTime,
 } from "../utils.js";
 
 const REFRESH_MS = 30000;
@@ -48,7 +49,7 @@ function requestCard(item) {
       </div>
       <div class="client-request-meta">
         <span>📅 ${escapeHTML(formatDate(item.date))}</span>
-        <span>🕐 ${escapeHTML(item.time)}</span>
+        <span>🕐 ${escapeHTML(formatTime(item.time))}</span>
         <strong>${formatCOP(item.amount)}</strong>
       </div>
       <p class="client-request-description">${escapeHTML(item.detail || "Solicitud de servicio para el hogar.")}</p>

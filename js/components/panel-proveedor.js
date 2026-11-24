@@ -15,6 +15,7 @@ import {
   showError,
   showLoading,
   statusClass,
+  formatTime,
 } from "../utils.js";
 
 const dashboard = document.querySelector("#provider-dashboard-requests");
@@ -98,7 +99,7 @@ function card(item, isDetail = false) {
       <div class="provider-request-top">
         <div>
           <h3>${escapeHTML(item.clientName || "Cliente")}</h3>
-          <p>${escapeHTML(item.service)} · ${escapeHTML(formatDate(item.date))} · ${escapeHTML(item.time)}</p>
+          <p>${escapeHTML(item.service)} · ${escapeHTML(formatDate(item.date))} · ${escapeHTML(formatTime(item.time))}</p>
           <p>${escapeHTML(item.address)}</p>
         </div>
         <div class="provider-request-price"><strong>${formatCOP(item.amount)}</strong><small>${escapeHTML(timeAgo(item.createdAt))}</small></div>

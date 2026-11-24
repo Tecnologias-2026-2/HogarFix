@@ -9,6 +9,7 @@ import {
   statusClass,
   showLoading,
   showError,
+  formatTime,
 } from "../utils.js";
 
 const panel = document.querySelector("#hiring-summary");
@@ -75,7 +76,7 @@ function render(solicitud) {
       <dl class="invoice-details">
         <div><dt>Categoría</dt><dd>${escapeHTML(solicitud.service)}</dd></div>
         <div><dt>Fecha</dt><dd>${escapeHTML(formatDate(solicitud.date))}</dd></div>
-        <div><dt>Hora</dt><dd>${escapeHTML(solicitud.time)}</dd></div>
+        <div><dt>Hora</dt><dd>${escapeHTML(formatTime(solicitud.time))}</dd></div>
         <div><dt>Ubicación</dt><dd>${escapeHTML(solicitud.address)}</dd></div>
         <div class="invoice-wide"><dt>Trabajo solicitado</dt><dd>${escapeHTML(solicitud.detail)}</dd></div>
         <div><dt>Método de pago</dt><dd>${escapeHTML(solicitud.paymentMethod?.nombre || "No indicado")}</dd></div>
