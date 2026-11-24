@@ -137,5 +137,25 @@ export function createRequestControllers(requestService) {
       (request) => requestService.listProviderRatings({ providerUid: request.params.uid }),
       "summary",
     ),
+    listRequestMessages: handle(
+      (request) =>
+        requestService.listMessages({
+          requestId: request.params.id,
+          actorUid: request.auth.uid,
+          actorRole: request.auth.role,
+        }),
+      "chat",
+    ),
+    sendRequestMessage: handle(
+      (request) =>
+        requestService.sendMessage({
+          requestId: request.params.id,
+          actorUid: request.auth.uid,
+          actorRole: request.auth.role,
+          input: request.body,
+        }),
+      "message",
+      201,
+    ),
   });
 }

@@ -5,6 +5,7 @@ import "./components/buscar.js";
 import "./components/perfil-cliente.js";
 import "./components/perfil-proveedor.js";
 import "./components/chat.js";
+import "./components/mensajes.js";
 import "./components/catalogo.js";
 import "./components/proveedores.js";
 import "./components/solicitud.js";
@@ -195,7 +196,8 @@ document.querySelector("#logout-button")?.addEventListener("click", async (event
   }
 });
 
-const chatForm = document.querySelector("#chat-form");
+// Chat local (solo modo demostración); con backend lo maneja components/mensajes.js.
+const chatForm = USE_REQUESTS_BACKEND ? null : document.querySelector("#chat-form");
 let activeClientChat = null;
 function renderChatMessages(target, providerName, key, emptyGreeting) {
   if (!target) return;
@@ -267,7 +269,9 @@ const desiredClientChat = new URLSearchParams(location.search).get("persona");
 const initialClientChat = [...document.querySelectorAll("[data-client-chat]")].find(
   (button) => button.dataset.clientChat === desiredClientChat,
 );
-if (initialClientChat) selectClientChat(initialClientChat);
+if (USE_REQUESTS_BACKEND) {
+  // components/mensajes.js arma las conversaciones reales.
+} else if (initialClientChat) selectClientChat(initialClientChat);
 else {
   const firstClientChat = document.querySelector("[data-client-chat]");
   if (firstClientChat) selectClientChat(firstClientChat);
@@ -478,7 +482,7 @@ function renderProviderRequestDetail() {
     : '<p class="empty-state">No encontramos esa solicitud.</p>';
 }
 if (!USE_REQUESTS_BACKEND) renderProviderRequestDetail();
-const providerMessageForm = document.querySelector("#provider-chat-form");
+const providerMessageForm = USE_REQUESTS_BACKEND ? null : document.querySelector("#provider-chat-form");
 let activeProviderChat = null;
 providerMessageForm?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -524,7 +528,9 @@ const desiredProviderChat = new URLSearchParams(location.search).get("chat");
 const initialProviderChat = [...document.querySelectorAll("[data-chat-person]")].find(
   (button) => button.dataset.chatPerson === desiredProviderChat,
 );
-if (initialProviderChat) selectProviderChat(initialProviderChat);
+if (USE_REQUESTS_BACKEND) {
+  // components/mensajes.js arma las conversaciones reales.
+} else if (initialProviderChat) selectProviderChat(initialProviderChat);
 else {
   const firstProviderChat = document.querySelector("[data-chat-person]");
   if (firstProviderChat) selectProviderChat(firstProviderChat);

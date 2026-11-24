@@ -89,6 +89,8 @@ Todas las rutas utilizan el prefijo `/api`.
 | GET | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Consulta la calificación de un servicio propio |
 | POST | `/api/solicitudes/:id/calificacion` | Cliente autenticado | Califica un servicio completado (1 a 5) |
 | GET | `/api/provider/:uid/calificaciones` | Usuario autenticado | Promedio y reseñas de un proveedor |
+| GET | `/api/solicitudes/:id/mensajes` | Cliente o proveedor de esa solicitud | Mensajes del chat de la solicitud (`solicitudes/{id}/messages`) |
+| POST | `/api/solicitudes/:id/mensajes` | Cliente o proveedor de esa solicitud | Envía un mensaje; 409 `CHAT_CLOSED` si la solicitud está rechazada o cancelada |
 | GET | `/api/notifications` | Usuario autenticado | Lista las notificaciones propias |
 | PATCH | `/api/notifications/:id/read` | Usuario autenticado | Marca como leída una notificación propia |
 | GET | `/api/support/faqs` | Usuario autenticado | Preguntas frecuentes |
@@ -130,7 +132,7 @@ La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la
 
 ## Pruebas automatizadas
 
-Desde esta carpeta, ejecuta `npm test` (en PowerShell con scripts bloqueados, `npm.cmd test`) para correr explícitamente los 10 archivos de pruebas automatizadas `test/*.test.js` (90 pruebas): aplicación, manejo de errores, autenticación, perfiles, catálogo, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
+Desde esta carpeta, ejecuta `npm test` (en PowerShell con scripts bloqueados, `npm.cmd test`) para correr explícitamente los 11 archivos de pruebas automatizadas `test/*.test.js` (95 pruebas): aplicación, manejo de errores, autenticación, perfiles, catálogo, rutas y servicio de solicitudes, validación, calificaciones y soporte, ingresos del proveedor y chat. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
 

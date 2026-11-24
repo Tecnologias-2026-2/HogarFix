@@ -11,7 +11,7 @@
     "seed:catalog": "node scripts/seed-catalog.js",
     "admin:grant": "node scripts/set-admin-claim.js",
     "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes --config ../firebase.json --project hogarfix-f9f56",
-    "test": "node --test test/app.test.js test/auth-middleware.test.js test/profile-routes.test.js test/request-routes.test.js test/request-service.test.js test/request-validation.test.js test/calificaciones-soporte.test.js test/catalog-service.test.js test/earnings-routes.test.js test/error-handling.test.js",
+    "test": "node --test test/app.test.js test/auth-middleware.test.js test/profile-routes.test.js test/request-routes.test.js test/request-service.test.js test/request-validation.test.js test/calificaciones-soporte.test.js test/catalog-service.test.js test/earnings-routes.test.js test/error-handling.test.js test/chat.test.js",
     "test:emulator": "firebase emulators:exec --config ..\\firebase.json --project demo-hogarfix --only firestore \"node scripts/run-emulator-tests.js\""
   },
   "dependencies": {

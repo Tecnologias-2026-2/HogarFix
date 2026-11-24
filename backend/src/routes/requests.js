@@ -55,6 +55,20 @@ export function createRequestsRouter(authDependencies, requestService) {
     requireRole("Cliente"),
     controllers.createClientRating,
   );
+  // Chat de la solicitud: cliente y proveedor usan la misma ruta; el servicio
+  // verifica que el usuario sea participante de esa solicitud.
+  router.get(
+    "/solicitudes/:id/mensajes",
+    authenticateRequest,
+    requireRole("Cliente", "Proveedor"),
+    controllers.listRequestMessages,
+  );
+  router.post(
+    "/solicitudes/:id/mensajes",
+    authenticateRequest,
+    requireRole("Cliente", "Proveedor"),
+    controllers.sendRequestMessage,
+  );
   router.get(
     "/provider/:uid/calificaciones",
     authenticateRequest,

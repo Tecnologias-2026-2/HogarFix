@@ -319,6 +319,27 @@ export async function calificarSolicitud(id, { rating, comment }) {
   return response.rating;
 }
 
+// GET /solicitudes/:id/mensajes — chat entre el cliente y el proveedor de la solicitud.
+export async function getMensajes(id) {
+  const response = await requestsHttp(`/solicitudes/${encodeURIComponent(id)}/mensajes`);
+  if (!response?.chat || !Array.isArray(response.chat.messages)) {
+    throw new ApiError("El servidor devolvió el chat con formato inválido.");
+  }
+  return response.chat;
+}
+
+// POST /solicitudes/:id/mensajes
+export async function enviarMensaje(id, text) {
+  const response = await requestsHttp(`/solicitudes/${encodeURIComponent(id)}/mensajes`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+  if (!response?.message || typeof response.message.id !== "string") {
+    throw new ApiError("El servidor devolvió el mensaje con formato inválido.");
+  }
+  return response.message;
+}
+
 // GET /provider/:uid/calificaciones
 export async function getCalificacionesProveedor(uid) {
   const response = await requestsHttp(
@@ -634,6 +655,8 @@ export const api = {
   getCalificacionSolicitud,
   calificarSolicitud,
   getCalificacionesProveedor,
+  getMensajes,
+  enviarMensaje,
   createSolicitud,
   confirmarSolicitud,
   getMetodosPago,

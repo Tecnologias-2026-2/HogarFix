@@ -19,8 +19,29 @@ const SAFE_CLIENT_ERROR_CODES = new Set([
   "INVALID_REQUEST_TRANSITION", "REQUEST_NOT_FOUND", "REQUEST_NOT_COMPLETED",
   "RATING_ALREADY_EXISTS", "INVALID_RATING", "INVALID_RATING_COMMENT",
   "PROTECTED_RATING_FIELDS", "IDEMPOTENCY_CONFLICT", "INVALID_IDEMPOTENCY_KEY",
-  "CATEGORY_INVALID", "IDEMPOTENCY_INVALID",
+  "CATEGORY_INVALID", "IDEMPOTENCY_INVALID", "INVALID_MESSAGE", "CHAT_CLOSED",
 ]);
+
+// Chat de cada solicitud: solo escriben el cliente y el proveedor de esa solicitud.
+const CHAT_CLOSED_STATUSES = new Set(["Rechazada", "Cancelada"]);
+const MAX_MESSAGE_LENGTH = 1000;
+const MAX_MESSAGES = 200;
+
+function validateMessageInput(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw serviceError("Envía el mensaje en formato JSON.", 400, "INVALID_MESSAGE");
+  }
+  const extra = Object.keys(input).filter((key) => key !== "text");
+  if (extra.length) {
+    throw serviceError(`No se permiten estos campos: ${extra.join(", ")}.`, 400, "INVALID_MESSAGE");
+  }
+  const text = typeof input.text === "string" ? input.text.trim() : "";
+  if (!text) throw serviceError("Escribe un mensaje.", 400, "INVALID_MESSAGE");
+  if (text.length > MAX_MESSAGE_LENGTH) {
+    throw serviceError(`El mensaje supera el máximo de ${MAX_MESSAGE_LENGTH} caracteres.`, 400, "INVALID_MESSAGE");
+  }
+  return text;
+}
 
 const TRANSITIONS = Object.freeze({
   accept: { role: "Proveedor", from: ["Pendiente"], to: "Aceptada", timestamp: "acceptedAt" },
@@ -719,6 +740,64 @@ async function checkProviderSchedule(transaction, providerUid, requestId, reques
     }
   }
 
+  // Devuelve la solicitud solo si quien pregunta es su cliente o su proveedor.
+  async function loadParticipantRequest(requestId, actorUid, actorRole) {
+    const data = documentData(await requestRef(requestId).get());
+    const ownerField = actorRole === "Cliente" ? "clientUid" : "providerUid";
+    if (!data || data[ownerField] !== actorUid) {
+      throw serviceError("No encontramos esa solicitud.", 404, "REQUEST_NOT_FOUND");
+    }
+    return data;
+  }
+
+  async function listMessages({ requestId, actorUid, actorRole } = {}) {
+    validateRequestId(requestId);
+    requireUid(actorUid);
+    assertActorRole(actorRole);
+    try {
+      const request = await loadParticipantRequest(requestId, actorUid, actorRole);
+      const snapshot = await requestRef(requestId)
+        .collection("messages")
+        .orderBy("createdAt", "asc")
+        .limit(MAX_MESSAGES)
+        .get();
+      return {
+        open: !CHAT_CLOSED_STATUSES.has(request.status),
+        messages: snapshot.docs.map((document) => {
+          const message = document.data();
+          return {
+            id: document.id,
+            text: message.text,
+            senderRole: message.senderRole,
+            createdAt: message.createdAt,
+            mine: message.senderUid === actorUid,
+          };
+        }),
+      };
+    } catch (error) {
+      throw safeFirestoreError(error);
+    }
+  }
+
+  async function sendMessage({ requestId, actorUid, actorRole, input } = {}) {
+    validateRequestId(requestId);
+    requireUid(actorUid);
+    assertActorRole(actorRole);
+    const text = validateMessageInput(input);
+    try {
+      const request = await loadParticipantRequest(requestId, actorUid, actorRole);
+      if (CHAT_CLOSED_STATUSES.has(request.status)) {
+        throw serviceError("El chat está cerrado porque la solicitud fue rechazada o cancelada.", 409, "CHAT_CLOSED");
+      }
+      const reference = requestRef(requestId).collection("messages").doc();
+      const message = { senderUid: actorUid, senderRole: actorRole, text, createdAt: now().toISOString() };
+      await reference.set(message);
+      return { id: reference.id, text, senderRole: actorRole, createdAt: message.createdAt, mine: true };
+    } catch (error) {
+      throw safeFirestoreError(error);
+    }
+  }
+
   async function getRequestRating({ requestId, clientUid } = {}) {
     validateRequestId(requestId);
     requireUid(clientUid);
@@ -745,6 +824,8 @@ async function checkProviderSchedule(transaction, providerUid, requestId, reques
     createRating,
     listProviderRatings,
     getRequestRating,
+    listMessages,
+    sendMessage,
     statuses: REQUEST_STATUSES,
   });
 }

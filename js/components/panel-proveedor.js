@@ -111,7 +111,7 @@ function card(item, isDetail = false) {
         <div class="provider-request-actions">
           ${buttons}${waiting}${eligibilityNote}
           ${isDetail ? "" : `<a href="detalle-proveedor.html?id=${encodeURIComponent(item.id)}">Ver detalles</a>`}
-          <a href="mensajes-proveedor.html?chat=${encodeURIComponent(item.clientName || "")}">Chat</a>
+          <a href="mensajes-proveedor.html?solicitud=${encodeURIComponent(item.id)}">Chat</a>
         </div>
       </div>
       <p class="form-feedback" role="status" aria-live="polite"></p>

@@ -326,7 +326,7 @@ erDiagram
 - Al aceptar, el backend revisa que el proveedor no tenga otro servicio en ese horario y actualiza la versión de `providerSchedules/{uid}`, para que dos aceptaciones simultáneas no ocupen el mismo horario.
 - Los ingresos (`/api/provider/earnings`) solo suman solicitudes con `payment.status = "paid"`. Como todavía no hay pasarela de pago, ningún flujo escribe ese campo y el total real es $0.
 
-**Modo demostración:** si `REQUESTS_API_BASE_URL` se deja vacía en `js/config.js`, el frontend usa `data/data.js` para categorías y proveedores y guarda las solicitudes en el `localStorage` del navegador, con los nombres de campo de `data/schema.json`. El chat siempre se guarda en `localStorage`. El inicio de sesión y los perfiles necesitan `PROFILE_API_BASE_URL`, porque el perfil se lee del backend.
+**Modo demostración:** si `REQUESTS_API_BASE_URL` se deja vacía en `js/config.js`, el frontend usa `data/data.js` para categorías y proveedores y guarda las solicitudes en el `localStorage` del navegador, con los nombres de campo de `data/schema.json`. En ese modo el chat también queda solo en `localStorage`. El inicio de sesión y los perfiles necesitan `PROFILE_API_BASE_URL`, porque el perfil se lee del backend.
 
 **Tarifas fijas actuales**
 
@@ -427,7 +427,7 @@ HogarFix/
 │       ├── perfil-proveedor.js Perfil, especialidades y disponibilidad del proveedor (#31, 19)
 │       ├── password.js        Mostrar/ocultar y requisitos de contraseña (#32)
 │       ├── service-center.js  Notificaciones y soporte (ISSUE 26)
-│       └── login.js, registro.js, buscar.js, chat.js
+│       └── login.js, registro.js, buscar.js, chat.js, mensajes.js (chat real por solicitud)
 ├── backend/
 │   ├── README.md              Instalación, endpoints y pruebas del backend
 │   ├── .env.example           Variables de entorno del backend
@@ -478,6 +478,8 @@ Todas las rutas llevan el prefijo `/api` y se sirven desde `https://hogarfix-zbr
 | GET | `/solicitudes/:id/calificacion` | Consultar si el cliente ya calificó un servicio propio | `{ rating: {...} }` o `{ rating: null }` |
 | POST | `/solicitudes/:id/calificacion` | Calificar un servicio completado (1–5 estrellas y comentario) | `{ rating: {...} }` |
 | GET | `/provider/:uid/calificaciones` | Consultar promedio, cantidad y reseñas de un proveedor | `{ summary: { average, count, ratings } }` |
+| GET | `/solicitudes/:id/mensajes` | Chat de la solicitud (solo su cliente o su proveedor) | `{ chat: { open, messages: [...] } }` |
+| POST | `/solicitudes/:id/mensajes` | Enviar un mensaje (`{ text }`, máximo 1000 caracteres) | `{ message: {...} }` |
 | GET | `/provider/solicitudes` | Solicitudes asignadas al proveedor autenticado | `{ requests: [...] }` |
 | GET | `/provider/solicitudes/:id` | Detalle de una solicitud asignada | `{ request: {...} }` |
 | PATCH | `/provider/solicitudes/:id/aceptar` | Aceptar solicitud si el proveedor es elegible | `{ request: {...} }` |
@@ -522,7 +524,7 @@ Reglas importantes para el backend:
 - **Historial:** filtros por estado y rango de fechas, orden, detalles desplegables, botón para cancelar las solicitudes pendientes o aceptadas, calificación de servicios completados y actualización automática (cada 30 s, al volver a la pestaña o cuando cambia en otra pestaña).
 - **Ingresos del proveedor:** `ingresos-proveedor.html` muestra el valor estimado de los servicios completados, calculado con las tarifas de las solicitudes que devuelve `/api/provider/solicitudes`, y la calificación promedio. No son pagos procesados.
 - **Notificaciones y soporte:** `notificaciones.html` lista los cambios de estado y permite marcarlos como leídos; `soporte.html` muestra las preguntas frecuentes y envía mensajes a `supportMessages`.
-- **Chat:** `chat.html` y `mensajes-proveedor.html` guardan los mensajes solo en el `localStorage` del navegador; no se sincronizan entre cuentas.
+- **Chat:** `chat.html` (cliente) y `mensajes-proveedor.html` (proveedor) muestran una conversación por cada solicitud. `js/components/mensajes.js` lee y envía los mensajes con `GET`/`POST /api/solicitudes/:id/mensajes` y se actualiza cada 5 segundos. Solo el cliente y el proveedor de esa solicitud pueden leer o escribir, y el chat se cierra si la solicitud se rechaza o se cancela.
 - **Estados de carga y error** en todas las consultas, con botón para reintentar.
 - **Diseño responsive** probado a 360 px (celular), 768 px (tablet) y 1280 px (escritorio), sin desbordamiento horizontal.
 - **Accesibilidad:** enlace para saltar al contenido, botones para aumentar el texto y alto contraste, etiquetas ARIA y navegación por teclado.
@@ -668,5 +670,5 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | 23-24 | Firebase Admin y operaciones en Firestore | ✅ Configuración centralizada y servicios del backend |
 | 25 | Calificaciones de proveedores | ✅ 1 a 5 estrellas, una por servicio y promedio por proveedor |
 | 26 | Notificaciones y soporte | ✅ API y pantallas de notificaciones y soporte; los recordatorios esperan un worker externo |
-| 27 | Pruebas e integración | 🟡 `npm test`: 90 pruebas en verde en 10 archivos; falta la evidencia con Postman/Thunder Client |
+| 27 | Pruebas e integración | 🟡 `npm test`: 95 pruebas en verde en 11 archivos; falta la evidencia con Postman/Thunder Client |
 | Despliegue | Frontend en GitHub Pages y backend en Render | ✅ `https://hogarfix-zbrm.onrender.com` (rama `main`) |

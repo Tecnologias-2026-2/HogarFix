@@ -37,7 +37,7 @@ function requestCard(item) {
     item.status === "Aceptada"
       ? `<a class="button button-small" href="reserva.html?id=${encodeURIComponent(item.id)}">Confirmar servicio</a>`
       : `<a href="reserva.html?id=${encodeURIComponent(item.id)}">Ver resumen</a>`,
-    `<a href="chat.html?persona=${encodeURIComponent(item.provider)}">▢ Chat</a>`,
+    `<a href="chat.html?solicitud=${encodeURIComponent(item.id)}">▢ Chat</a>`,
     ratingAction,
     cancelAction,
   ].join("");
