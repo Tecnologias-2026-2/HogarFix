@@ -171,8 +171,10 @@ El backend escribe con Firebase Admin SDK y por ello omite las reglas de Firesto
 
 ## Render y datos iniciales
 
-La raíz contiene `render.yaml` para crear el servicio Node desde esta carpeta. En Render, carga el Secret File `firebase-service-account.json`; el servicio utiliza `/etc/secrets/firebase-service-account.json` mediante `GOOGLE_APPLICATION_CREDENTIALS`. Confirma el subdominio que Render asigne y actualiza `js/config.js` si difiere del valor configurado.
+El backend está publicado en Render como *Web Service* en **https://hogarfix-zbrm.onrender.com**, desplegado desde la rama `main` con Root Directory `backend`, Build Command `npm ci` y Start Command `npm start`. Render asigna `PORT`, que `src/server.js` lee de `process.env.PORT`.
 
-Para inicializar el catálogo ejecuta `npm run seed:catalog` después de definir y confirmar `FIREBASE_PROJECT_ID`. Para asociar proveedores configura `PROVIDER_CATALOG_JSON` con IDs reales; el script verifica cuenta activa y perfil aprobado y no inventa usuarios ni los aprueba.
+Variables de entorno: `FIREBASE_PROJECT_ID=hogarfix-f9f56`, `CORS_ORIGINS=https://tecnologias-2026-2.github.io` y `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/firebase-admin.json`. La clave de la cuenta de servicio se carga en Render como Secret File llamado `firebase-admin.json`; nunca se guarda en el repositorio (`.gitignore` la excluye). `render.yaml`, en la raíz, documenta estos mismos valores.
+
+Para inicializar el catálogo ejecuta `npm run seed:catalog` después de definir y confirmar `FIREBASE_PROJECT_ID`. Para asociar proveedores configura `PROVIDER_CATALOG_JSON` con IDs reales; el script verifica cuenta activa y perfil aprobado y no inventa usuarios ni los aprueba. Publica reglas e índices (`npm run deploy:firestore`) solo después de que `main` tenga el frontend que consulta el perfil por la API; el orden completo está en la sección *Orden de publicación* del README principal.
 
 El frontend actual y su despliegue en GitHub Pages permanecen en la raíz del repositorio. Esta carpeta no forma parte del artefacto publicado por Pages.

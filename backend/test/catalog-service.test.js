@@ -71,3 +71,50 @@ test("el catálogo publica solo proveedores elegibles y no expone correo", async
   assert.equal(providers[0].rating, 4.5);
   assert.equal("email" in providers[0], false);
 });
+
+test("un proveedor inexistente responde 404 con código PROVIDER_NOT_FOUND", async () => {
+  const service = createCatalogService({ db: createDb(), profileService: {} });
+  await assert.rejects(service.getProvider("no-existe"), {
+    statusCode: 404,
+    code: "PROVIDER_NOT_FOUND",
+  });
+});
+
+test("un proveedor inactivo en el catálogo responde 404", async () => {
+  const service = createCatalogService({ db: createDb(), profileService: {} });
+  await assert.rejects(service.getProvider("inactive"), {
+    statusCode: 404,
+    code: "PROVIDER_NOT_FOUND",
+  });
+});
+
+test("un identificador de catálogo malformado responde 400", async () => {
+  const service = createCatalogService({ db: createDb(), profileService: {} });
+  await assert.rejects(service.getProvider("a/b"), {
+    statusCode: 400,
+    code: "INVALID_CATALOG_ID",
+  });
+});
+
+test("filtrar por una categoría inactiva responde 404 con código CATEGORY_NOT_FOUND", async () => {
+  const service = createCatalogService({ db: createDb(), profileService: {} });
+  await assert.rejects(service.listProviders({ categoryId: "disabled" }), {
+    statusCode: 404,
+    code: "CATEGORY_NOT_FOUND",
+  });
+});
+
+test("un fallo de Firestore en el catálogo responde 503 sin detalles internos", async () => {
+  const brokenDb = {
+    collection() {
+      throw Object.assign(new Error("credenciales internas"), { code: "unavailable" });
+    },
+  };
+  const service = createCatalogService({ db: brokenDb, profileService: {} });
+  await assert.rejects(service.listCategories(), (error) => {
+    assert.equal(error.statusCode, 503);
+    assert.equal(error.code, "FIRESTORE_UNAVAILABLE");
+    assert.doesNotMatch(error.message, /credenciales/);
+    return true;
+  });
+});

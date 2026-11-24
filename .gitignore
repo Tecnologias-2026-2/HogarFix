@@ -14,3 +14,4 @@ Thumbs.db
 *serviceAccount*.json
 *service-account*.json
 *firebase-adminsdk*.json
+firebase-admin.json

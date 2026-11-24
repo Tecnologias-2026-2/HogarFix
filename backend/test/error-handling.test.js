@@ -8,6 +8,15 @@ import {
 } from "../src/middlewares/error-handler.js";
 
 import { validate } from "../src/middlewares/validate.js";
+import { createCatalogService } from "../src/services/catalog-service.js";
+
+// Firestore simulado sin documentos: todo proveedor consultado es inexistente.
+const emptyDb = {
+  collection() {
+    return { doc() { return { async get() { return { exists: false }; } }; } };
+  },
+};
+const catalogService = createCatalogService({ db: emptyDb, profileService: {} });
 
 function createTestApp() {
   const app = express();
@@ -67,6 +76,24 @@ function createTestApp() {
         code: "INVALID_REQUEST_ID"
       }
     );
+  });
+
+  app.get("/perfil-duplicado", () => {
+    throw Object.assign(
+      new Error("Ya existe un perfil para esta cuenta."),
+      {
+        statusCode: 409,
+        code: "PROFILE_ALREADY_EXISTS"
+      }
+    );
+  });
+
+  app.get("/proveedores/:id", async (request, response, next) => {
+    try {
+      response.json({ status: "ok", provider: await catalogService.getProvider(request.params.id) });
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.use(notFoundHandler);
@@ -218,5 +245,29 @@ test("ISSUE 21: conserva errores de validación conocidos", async () => {
       data.message,
       "La solicitud indicada no es válida."
     );
+  });
+});
+
+test("PROFILE_ALREADY_EXISTS responde 409 con un mensaje claro", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/perfil-duplicado`);
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(await response.json(), {
+      status: "error",
+      message: "Ya existe un perfil para esta cuenta."
+    });
+  });
+});
+
+test("un proveedor inexistente del catálogo responde 404 y no 500", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/proveedores/no-existe`);
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), {
+      status: "error",
+      message: "No encontramos a este profesional."
+    });
   });
 });

@@ -9,13 +9,25 @@ const CATEGORIES = Object.freeze({
   "aseo-general": { color: "blue", icono: "assets/service-cleaning.svg", emoji: "🧹" },
 });
 
-function invalid(message, statusCode = 400) {
-  return Object.assign(new Error(message), { statusCode });
+function serviceError(message, statusCode, code) {
+  return Object.assign(new Error(message), { statusCode, code });
+}
+
+// Mismo patrón que profile-service y request-service: los errores conocidos
+// conservan su estado y código; un fallo de Firestore se responde como 503.
+async function guard(operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    if (Number.isInteger(error?.statusCode)) throw error;
+    console.error("Firestore catalog operation failed:", error?.code || "unknown");
+    throw serviceError("No se pudo consultar el catálogo en este momento.", 503, "FIRESTORE_UNAVAILABLE");
+  }
 }
 
 function validId(value) {
   if (typeof value !== "string" || !value.trim() || value.length > 128 || value.includes("/")) {
-    throw invalid("El identificador del catálogo no es válido.");
+    throw serviceError("El identificador del catálogo no es válido.", 400, "INVALID_CATALOG_ID");
   }
   return value.trim();
 }
@@ -93,9 +105,9 @@ export function createCatalogService({ db, profileService, requestService } = {}
   async function getProvider(id) {
     const catalogId = validId(id);
     const snapshot = await firestore().collection("providerCatalog").doc(catalogId).get();
-    if (!snapshot.exists) throw invalid("No encontramos a este profesional.", 404);
+    if (!snapshot.exists) throw serviceError("No encontramos a este profesional.", 404, "PROVIDER_NOT_FOUND");
     const provider = await presentProvider(catalogId, snapshot.data());
-    if (!provider) throw invalid("Este profesional no está disponible en el catálogo.", 404);
+    if (!provider) throw serviceError("Este profesional no está disponible en el catálogo.", 404, "PROVIDER_NOT_FOUND");
     return provider;
   }
 
@@ -103,12 +115,16 @@ export function createCatalogService({ db, profileService, requestService } = {}
     if (categoryId) {
       validId(categoryId);
       const category = await firestore().collection("categories").doc(categoryId).get();
-      if (!category.exists || category.get("active") !== true) throw invalid("La categoría no está disponible.", 404);
+      if (!category.exists || category.get("active") !== true) throw serviceError("La categoría no está disponible.", 404, "CATEGORY_NOT_FOUND");
     }
     const snapshot = await firestore().collection("providerCatalog").where("active", "==", true).limit(MAX_CATALOG_ITEMS).get();
     const providers = await Promise.all(snapshot.docs.map((doc) => presentProvider(doc.id, doc.data())));
     return providers.filter((provider) => provider && (!categoryId || provider.categoryIds.includes(categoryId)));
   }
 
-  return Object.freeze({ listCategories, listProviders, getProvider });
+  return Object.freeze({
+    listCategories: () => guard(listCategories),
+    listProviders: (options) => guard(() => listProviders(options)),
+    getProvider: (id) => guard(() => getProvider(id)),
+  });
 }

@@ -555,9 +555,37 @@ El frontend se publica en **GitHub Pages** directamente desde la rama `main`: ca
 
 Configuración (ya está hecha; la cambia solo quien administra el repositorio): **Settings → Pages → Build and deployment → Source: Deploy from a branch**, rama `main`, carpeta `/ (root)`.
 
-Como se publica la raíz del repositorio, la carpeta `backend/` también queda visible como archivos estáticos (sin ejecutarse). No contiene secretos: las credenciales van en `.env`, que está excluido por `.gitignore`.
+Como se publica la raíz del repositorio, la carpeta `backend/` también queda visible como archivos estáticos (sin ejecutarse). No contiene secretos: las credenciales van en `.env` o en el Secret File de Render, excluidos por `.gitignore`.
 
 El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
+
+### Backend en Render
+
+El backend Express se ejecuta en **Render** como *Web Service*: **https://hogarfix-zbrm.onrender.com** (comprobación: [`/api/health`](https://hogarfix-zbrm.onrender.com/api/health)). `js/config.js` apunta a `https://hogarfix-zbrm.onrender.com/api`.
+
+| Ajuste en Render | Valor |
+| --- | --- |
+| Rama que despliega | `main` (cada push a `main` redespliega en unos 2 minutos) |
+| Root Directory | `backend` |
+| Build Command | `npm ci` |
+| Start Command | `npm start` (`node src/server.js`; el puerto lo asigna Render en `PORT`) |
+| Variables de entorno | `FIREBASE_PROJECT_ID=hogarfix-f9f56`, `CORS_ORIGINS=https://tecnologias-2026-2.github.io`, `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/firebase-admin.json` |
+| Secret File | `firebase-admin.json` (clave de la cuenta de servicio de Firebase Admin; nunca se sube al repositorio) |
+
+El servicio se creó a mano en el panel de Render. [`render.yaml`](render.yaml) documenta los mismos valores y solo se usaría para crear un Blueprint nuevo.
+
+El plan gratuito de Render suspende el servicio tras unos minutos sin uso; la primera petición (incluido el inicio de sesión) puede tardar cerca de 50 segundos. Antes de una demostración, abre `/api/health` para despertarlo.
+
+### Orden de publicación
+
+Los pasos con credenciales de Firebase se ejecutan desde un PC, con la clave guardada fuera del repositorio (el Shell de Render es de pago).
+
+1. Corregir y probar en `Dev`: `cd backend && npm ci && npm test`.
+2. Pasar `Dev` → `main`. GitHub Pages y Render se actualizan por separado; espera a que Render muestre **Live** con el commit nuevo.
+3. Probar registro e inicio de sesión en la página publicada.
+4. Solo después de que `main` tenga el código nuevo, publicar reglas e índices: `npm run deploy:firestore`. Si se publican antes, el frontend anterior (que leía `users` directamente) no podría iniciar sesión.
+5. Sembrar el catálogo con `npm run seed:catalog`, aprobar un proveedor de prueba con perfil completo (`adminApproval.status = "approved"` en la consola de Firebase, o con `npm run admin:grant` y la ruta administrativa) y repetir `npm run seed:catalog` con `PROVIDER_CATALOG_JSON` que incluya el UID de ese proveedor.
+6. Probar el flujo completo: buscar → solicitar → aceptar → confirmar → iniciar → completar → calificar.
 
 ## 🔒 10. Seguridad y archivos sensibles
 
@@ -569,12 +597,6 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 - Firebase Admin usa Application Default Credentials y `FIREBASE_PROJECT_ID`; configura ADC en el entorno de ejecución. Las credenciales privadas deben permanecer fuera del repositorio y no subirse a GitHub.
 - El control de acceso de las pantallas mejora la navegación, pero la autorización de los datos debe imponerse en el backend. La aprobación de proveedores requiere el claim administrativo; las reglas niegan operaciones directas del cliente y se publican junto con los índices mediante Firebase CLI.
 - Lista de revisión antes de cada entrega: sin archivos `.env` ni credenciales de cuentas de servicio. Como GitHub Pages publica la raíz del repositorio, la página de prueba `prueba.html` (con `js/prueba-firebase.js`) también queda publicada; no contiene credenciales privadas.
-
-### Backend en Render y datos iniciales
-
-[`render.yaml`](render.yaml) define el servicio Node en la rama `Dev`, con raíz `backend/` y chequeo `/api/health`. En Render, crea el Blueprint y carga `firebase-service-account.json` como Secret File. Confirma la URL asignada y ajusta `js/config.js` si Render agrega un sufijo al subdominio.
-
-Desde `backend/`, ejecuta `npm run deploy:firestore` con Firebase CLI autenticado para publicar reglas e índices. Ejecuta `npm run seed:catalog` para sembrar categorías; para asociar proveedores, configura UIDs reales y perfiles ya aprobados. `npm run admin:grant` asigna el claim inicial solo tras confirmar el UID autorizado. Estos pasos requieren credenciales Firebase y no se ejecutan automáticamente al desplegar.
 
 ## 📌 11. Estado del proyecto
 
