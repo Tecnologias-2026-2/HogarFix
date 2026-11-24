@@ -22,7 +22,8 @@ Proyecto enfocado en conectar a personas que necesitan servicios para el hogar c
 - Laura Valentina Bojacá Sánchez – 1202561
 - Sebastián Gómez Ramírez – 1202821
 - Juan José Gutiérrez – 1202
-- Sebastián Torres – 1202
+- Sebastián Torres – 1202873
+  
 
 ## 🎯 1. Objetivo general
 
