@@ -78,6 +78,7 @@ export function errorHandler(error, _request, response, next) {
   if (isSafeClientError) {
     return response.status(status).json({
       status: "error",
+      code: error.code,
       message: error.message
     });
   }

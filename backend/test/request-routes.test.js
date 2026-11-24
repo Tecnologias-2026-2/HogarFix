@@ -13,6 +13,26 @@ const profiles = {
   "provider-uid": { email: "provider@example.test", role: "Proveedor" },
 };
 
+// Solicitud válida con fecha relativa (pasado mañana, hora de Bogotá): el middleware
+// validate usa el reloj real, así que una fecha fija dejaría de ser válida con el tiempo.
+function futureDate(days = 2) {
+  const bogotaNow = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  bogotaNow.setUTCDate(bogotaNow.getUTCDate() + days);
+  return bogotaNow.toISOString().slice(0, 10);
+}
+
+function validRequestBody(extra = {}) {
+  return {
+    providerCatalogId: "catalog-1",
+    categoryId: "plomeria",
+    date: futureDate(),
+    time: "10:00",
+    address: "Calle 45 #28-10",
+    detail: "Reparación de una fuga en el lavaplatos.",
+    ...extra,
+  };
+}
+
 function createRequestServiceMock(overrides = {}) {
   const calls = [];
   const requestService = {
@@ -161,15 +181,7 @@ test("create passes the authenticated UID, never a body UID, to the service", as
     const response = await request(baseUrl, "/api/solicitudes", "client-token", {
       method: "POST",
       headers: { "Idempotency-Key": "request-key-000001" },
-      body: JSON.stringify({
-        providerCatalogId: "catalog-1",
-        categoryId: "plomeria",
-        date: "2026-11-25",
-        time: "10:00",
-        address: "Calle 45 #28-10",
-        detail: "Reparación de una fuga en el lavaplatos.",
-        clientUid: "forged-client",
-      }),
+      body: JSON.stringify(validRequestBody({ clientUid: "forged-client" })),
     });
 
     assert.equal(response.status, 400);
@@ -187,14 +199,7 @@ test("valid client creation returns 201 and forwards the idempotency key", async
     const response = await request(baseUrl, "/api/solicitudes", "client-token", {
       method: "POST",
       headers: { "Idempotency-Key": "request-key-000001" },
-      body: JSON.stringify({
-        providerCatalogId: "catalog-1",
-        categoryId: "plomeria",
-        date: "2026-11-25",
-        time: "10:00",
-        address: "Calle 45 #28-10",
-        detail: "Reparación de una fuga en el lavaplatos.",
-      }),
+      body: JSON.stringify(validRequestBody()),
     });
 
     assert.equal(response.status, 201);
@@ -437,7 +442,7 @@ test("publica los errores de dominio con su estado 4xx y código", async () => {
     const response = await request(baseUrl, "/api/solicitudes", "client-token", {
       method: "POST",
       headers: { "Idempotency-Key": "request-key-000001" },
-      body: JSON.stringify({}),
+      body: JSON.stringify(validRequestBody()),
     });
     assert.equal(response.status, 409);
     assert.equal((await response.json()).code, "PROVIDER_SCHEDULE_CONFLICT");
@@ -454,7 +459,7 @@ test("conserva 503 para errores de Firebase en vez de convertirlos a 500", async
     const response = await request(baseUrl, "/api/solicitudes", "client-token", {
       method: "POST",
       headers: { "Idempotency-Key": "request-key-000001" },
-      body: JSON.stringify({}),
+      body: JSON.stringify(validRequestBody()),
     });
     assert.equal(response.status, 503);
     assert.match((await response.json()).message, /temporalmente no disponible/i);

@@ -255,6 +255,7 @@ test("PROFILE_ALREADY_EXISTS responde 409 con un mensaje claro", async () => {
     assert.equal(response.status, 409);
     assert.deepEqual(await response.json(), {
       status: "error",
+      code: "PROFILE_ALREADY_EXISTS",
       message: "Ya existe un perfil para esta cuenta."
     });
   });
@@ -267,6 +268,7 @@ test("un proveedor inexistente del catálogo responde 404 y no 500", async () =>
     assert.equal(response.status, 404);
     assert.deepEqual(await response.json(), {
       status: "error",
+      code: "PROVIDER_NOT_FOUND",
       message: "No encontramos a este profesional."
     });
   });
