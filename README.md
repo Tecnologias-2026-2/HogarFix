@@ -324,7 +324,7 @@ erDiagram
 | --- | --- |
 | Frontend | HTML5, CSS3 (diseño responsive con media queries), JavaScript (módulos ES) |
 | Backend | Node.js + Express: autenticación, perfiles, solicitudes, calificaciones, notificaciones, soporte e ingresos |
-| Base de datos y autenticación | Firebase Authentication y Cloud Firestore (el catálogo de categorías y proveedores del frontend sigue en modo demostración) |
+| Base de datos y autenticación | Firebase Authentication y Cloud Firestore, accedido por el backend |
 | Diseño | Figma |
 | Control de versiones y publicación | Git, GitHub y GitHub Pages |
 | Formato de código | Prettier (`.prettierrc.json`) |
@@ -341,19 +341,19 @@ flowchart LR
   end
   API -- "PROFILE_API_BASE_URL definida" --> EXP[Backend Express]
   API -- "REQUESTS_API_BASE_URL definida" --> EXP
-  API -- "solicitudes sin URL" --> DEMO[(data/data.js + localStorage)]
-  API -- "categorías y proveedores" --> DEMO
+  API -- "API habilitada" --> EXP[Backend Express]
+  API -- "URLs vacías (modo local)" --> DEMO[(data/data.js + localStorage)]
   EXP -- "Firebase Admin: verificación de ID token" --> AUTH[Firebase Auth]
   EXP -- "datos personales propios" --> USERS[("Firestore: users/{uid}")]
   EXP -- "perfil profesional y estados" --> PROVIDERPROFILES[("Firestore: providerProfiles/{uid}")]
   EXP -- "solicitudes, calificaciones, notificaciones y soporte" --> BUSINESS[("Firestore: solicitudes, ratings, notifications, supportMessages")]
   AUTHUI --> AUTH
-  AUTHUI --> USERS
+  AUTHUI -- "perfil mediante API" --> EXP
 ```
 
 - **Frontend:** cada pantalla es un archivo HTML que carga `js/main.js`. `main.js` importa los módulos de `js/components/`, y cada módulo actúa solo si encuentra sus elementos en la página.
-- **Autenticación (`js/services/auth.js`):** el registro y el inicio de sesión usan Firebase Authentication. El perfil se guarda y consulta en `users/{uid}` con `createdAt`, `email`, `firstName`, `lastName` y `role`. La sesión persistente pertenece a Firebase Authentication.
-- **Capa de servicios (`js/services/api.js`):** categorías y proveedores siguen en **modo demostración** con `data/data.js`. Las solicitudes usan `localStorage` mientras `REQUESTS_API_BASE_URL` esté vacía; al configurarla usan únicamente el backend. La gestión de perfiles requiere `PROFILE_API_BASE_URL` y usa rutas REST protegidas, sin alternativa local.
+- **Autenticación (`js/services/auth.js`):** Firebase Authentication gestiona registro e inicio de sesión. El navegador crea el perfil inicial y consulta/actualiza perfiles mediante rutas backend autenticadas; no lee ni escribe Firestore directamente.
+- **Capa de servicios (`js/services/api.js`):** categorías, proveedores, solicitudes, notificaciones y soporte se consultan por rutas REST. Al dejar las URLs vacías, el catálogo y las solicitudes usan los fixtures/datos locales de demostración.
 - **Backend (`backend/`):** Express expone `GET /api/health` y las rutas de identidad, perfiles, especialidades y disponibilidad, solicitudes (crear, confirmar, cancelar, aceptar, rechazar, iniciar y completar), calificaciones, notificaciones, soporte e ingresos del proveedor (sección 7.4). Firebase Admin verifica firma, vencimiento y revocación del ID token; el rol se obtiene del perfil `users/{uid}` usando el UID verificado. Los errores se responden con un formato común desde `middlewares/error-handler.js`.
 - **Firebase:** Firebase Authentication gestiona las cuentas y la sesión; Firestore almacena datos personales en `users/{uid}` y datos profesionales/controlados por servidor en `providerProfiles/{uid}`. El backend usa Firebase Admin con Application Default Credentials, que omite las reglas de Firestore; por ello las rutas validan explícitamente sus campos y permisos.
 
@@ -376,6 +376,8 @@ HogarFix/
 ├── mi-perfil-proveedor.html   Perfil editable del proveedor
 ├── ingresos-proveedor.html    Ingresos y calificación del proveedor
 ├── mensajes-proveedor.html    Chat del proveedor
+├── notificaciones.html        Notificaciones del usuario
+├── soporte.html               Preguntas frecuentes y formulario de soporte
 ├── prueba.html                Página de prueba de conexión con Firebase (usa js/prueba-firebase.js)
 ├── assets/                    Logos, íconos SVG e imágenes
 ├── css/styles.css             Estilos globales y media queries
@@ -415,8 +417,9 @@ HogarFix/
 │   │   ├── config/firebase-admin.js  Inicialización diferida de Firebase Admin
 │   │   ├── middlewares/       auth.js (token y rol), validate.js, error-handler.js
 │   │   ├── controllers/       admin, earnings, profile y request
-│   │   ├── routes/            access, admin, profile, requests, earnings y support
+│   │   ├── routes/            access, admin, auth-profile, catalog, profile, requests, earnings y support
 │   │   └── services/          perfiles, solicitudes, calificaciones, notificaciones, soporte e ingresos
+│   ├── scripts/               seed-catalog.js, set-admin-claim.js, run-emulator-tests.js
 │   └── test/
 │       ├── app.test.js, error-handling.test.js           Aplicación y manejo de errores
 │       ├── catalog-service.test.js                       Catálogo backend
