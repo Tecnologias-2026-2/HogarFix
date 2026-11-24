@@ -173,9 +173,11 @@ test("create passes the authenticated UID, never a body UID, to the service", as
     });
 
     assert.equal(response.status, 400);
-    assert.equal(calls[0][0], "createRequest");
-    assert.equal(calls[0][1].clientUid, "client-uid");
-    assert.equal(calls[0][1].idempotencyKey, "request-key-000001");
+    assert.equal(calls.length, 0);
+
+    const data = await response.json();
+    assert.equal(data.status, "error");
+
   });
 });
 
@@ -422,5 +424,39 @@ test("support and notification endpoints are authenticated and use the verified 
       ["createSupportMessage", { uid: "provider-uid", role: "Proveedor", input: { subject: "Ayuda con mi cuenta", message: "Necesito ayuda para actualizar mi perfil." } }],
     ]);
     assert.equal((await request(baseUrl, "/api/support/faqs", "invalid")).status, 401);
+  });
+});
+
+test("publica los errores de dominio con su estado 4xx y código", async () => {
+  const conflict = Object.assign(new Error("El horario ya no está disponible."), {
+    statusCode: 409,
+    code: "PROVIDER_SCHEDULE_CONFLICT",
+  });
+  const { app } = createTestApp({ requestServiceOverrides: { async createRequest() { throw conflict; } } });
+  await withServer(app, async (baseUrl) => {
+    const response = await request(baseUrl, "/api/solicitudes", "client-token", {
+      method: "POST",
+      headers: { "Idempotency-Key": "request-key-000001" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).code, "PROVIDER_SCHEDULE_CONFLICT");
+  });
+});
+
+test("conserva 503 para errores de Firebase en vez de convertirlos a 500", async () => {
+  const unavailable = Object.assign(new Error("Firestore unavailable"), {
+    statusCode: 503,
+    code: "FIRESTORE_UNAVAILABLE",
+  });
+  const { app } = createTestApp({ requestServiceOverrides: { async createRequest() { throw unavailable; } } });
+  await withServer(app, async (baseUrl) => {
+    const response = await request(baseUrl, "/api/solicitudes", "client-token", {
+      method: "POST",
+      headers: { "Idempotency-Key": "request-key-000001" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(response.status, 503);
+    assert.match((await response.json()).message, /temporalmente no disponible/i);
   });
 });

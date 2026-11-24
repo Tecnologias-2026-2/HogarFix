@@ -11,6 +11,7 @@ import "./components/solicitud.js";
 import "./components/resumen.js";
 import "./components/historial.js";
 import "./components/panel-proveedor.js";
+import "./components/service-center.js";
 import { USE_REQUESTS_BACKEND } from "./services/api.js";
 import {
   getAuthErrorMessage,

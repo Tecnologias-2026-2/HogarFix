@@ -1,4 +1,5 @@
-import { auth, db } from "../firebase-config.js";
+import { auth } from "../firebase-config.js";
+import { PROFILE_API_BASE_URL } from "../config.js";
 import {
   browserLocalPersistence,
   createUserWithEmailAndPassword,
@@ -9,12 +10,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
-import {
-  doc,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-} from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
 const VALID_ROLES = new Set(["Cliente", "Proveedor"]);
 const subscribers = new Set();
@@ -31,14 +26,7 @@ const initialState = new Promise((resolve) => {
 });
 
 async function readUserProfile(user) {
-  const snapshot = await getDoc(doc(db, "users", user.uid));
-  if (!snapshot.exists()) {
-    const error = new Error("No existe un perfil para esta cuenta.");
-    error.code = "profile/not-found";
-    throw error;
-  }
-
-  const profile = snapshot.data();
+  const profile = await requestBackendProfile(user, "/profile/me");
   if (!VALID_ROLES.has(profile.role) || profile.email !== user.email) {
     const error = new Error("El perfil de usuario no es válido.");
     error.code = "profile/invalid";
@@ -46,6 +34,36 @@ async function readUserProfile(user) {
   }
 
   return { ...profile, uid: user.uid };
+}
+
+async function requestBackendProfile(user, path, body) {
+  if (!PROFILE_API_BASE_URL) {
+    const error = new Error("Configura PROFILE_API_BASE_URL para conectar el registro y el perfil con el backend.");
+    error.code = "profile/backend-unconfigured";
+    throw error;
+  }
+  let response;
+  try {
+    response = await fetch(`${PROFILE_API_BASE_URL}${path}`, {
+      method: body ? "POST" : "GET",
+      headers: {
+        Authorization: `Bearer ${await user.getIdToken()}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    const error = new Error("No se pudo conectar con el backend de HogarFix.");
+    error.code = "profile/backend-unavailable";
+    throw error;
+  }
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.profile) {
+    const error = new Error(result.message || "No se pudo guardar o consultar el perfil.");
+    error.code = result.code || `profile/http-${response.status}`;
+    throw error;
+  }
+  return result.profile;
 }
 
 function publishAuthState(state) {
@@ -141,17 +159,13 @@ export async function registerUser({ email, password, firstName, lastName, role 
       password,
     ));
     const profileFields = {
-      email: user.email,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       role,
     };
 
     try {
-      await setDoc(doc(db, "users", user.uid), {
-        createdAt: serverTimestamp(),
-        ...profileFields,
-      });
+      await requestBackendProfile(user, "/auth/profile", profileFields);
     } catch (profileError) {
       try {
         await deleteUser(user);
