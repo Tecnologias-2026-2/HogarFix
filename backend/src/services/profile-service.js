@@ -48,6 +48,8 @@ function toProviderProfile(uid, data = {}) {
   return {
     uid,
     ...fields,
+    ratingCount: Number.isInteger(data.ratingCount) ? data.ratingCount : 0,
+    ratingAverage: Number.isFinite(data.ratingAverage) ? data.ratingAverage : 0,
     profileComplete: assessment.complete,
     automaticValidation: data.automaticValidation || {
       status: "pending",
@@ -89,6 +91,48 @@ export function createProfileService({ db, auth, now = () => new Date() } = {}) 
       role: data.role,
       phone: data.phone || "",
     };
+  }
+
+  async function createInitialProfile({ uid, email, firstName, lastName, role } = {}) {
+    requireUid(uid);
+    if (typeof email !== "string" || !email.trim() || email.length > 254) {
+      throw serviceError("El token no contiene un correo válido.", 400, "INVALID_PROFILE");
+    }
+    if (!["Cliente", "Proveedor"].includes(role)) {
+      throw serviceError("Selecciona un tipo de cuenta válido.", 400, "INVALID_PROFILE");
+    }
+    const values = validatePersonalProfile({ firstName, lastName });
+    const reference = userRef(uid);
+    const timestamp = now().toISOString();
+    let result;
+    try {
+      await firestore().runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(reference);
+        if (snapshot.exists) {
+          const current = snapshot.data();
+          if (
+            current.email !== email.trim().toLowerCase()
+            || current.role !== role
+            || current.firstName !== values.firstName
+            || current.lastName !== values.lastName
+          ) throw serviceError("Ya existe un perfil para esta cuenta.", 409, "PROFILE_ALREADY_EXISTS");
+          result = { uid, email: current.email, firstName: current.firstName, lastName: current.lastName, role: current.role, phone: current.phone || "" };
+          return;
+        }
+        transaction.create(reference, {
+          email: email.trim().toLowerCase(),
+          ...values,
+          role,
+          createdAt: timestamp,
+        });
+        result = { uid, email: email.trim().toLowerCase(), ...values, role, phone: "" };
+      });
+    } catch (error) {
+      if (Number.isInteger(error?.statusCode)) throw error;
+      console.error("Initial profile creation failed:", error?.code || "unknown");
+      throw serviceError("No se pudo guardar el perfil en este momento.", 503, "FIRESTORE_UNAVAILABLE");
+    }
+    return result;
   }
 
   async function updateMyProfile(uid, input) {
@@ -221,6 +265,7 @@ export function createProfileService({ db, auth, now = () => new Date() } = {}) 
   }
 
   return Object.freeze({
+    createInitialProfile,
     getMyProfile,
     updateMyProfile,
     getProviderProfile,

@@ -10,6 +10,8 @@ const SAFE_CLIENT_ERROR_CODES = new Set([
   "PROTECTED_REQUEST_FIELDS",
   "INVALID_REQUEST_TRANSITION",
   "INVALID_IDEMPOTENCY_KEY",
+  "IDEMPOTENCY_INVALID",
+  "IDEMPOTENCY_CONFLICT",
   "INVALID_LIMIT",
   "INVALID_RATING",
   "INVALID_RATING_COMMENT",
@@ -21,6 +23,9 @@ const SAFE_CLIENT_ERROR_CODES = new Set([
   "CATEGORY_NOT_FOUND",
   "PROVIDER_NOT_FOUND",
   "PROVIDER_NOT_ELIGIBLE",
+  "PROVIDER_SCHEDULE_CONFLICT",
+  "PROTECTED_RATING_FIELDS",
+  "CATEGORY_INVALID",
   "PROVIDER_LINK_CHANGED",
   "CATEGORY_CHANGED",
   "REQUEST_NOT_FOUND",
@@ -54,13 +59,7 @@ export function errorHandler(error, _request, response, next) {
   }
 
 
-  if (
-    error?.statusCode === 503 &&
-    [
-      "FIRESTORE_UNAVAILABLE",
-      "AUTH_UNAVAILABLE"
-    ].includes(error?.code)
-  ) {
+  if (error?.statusCode === 503) {
       return response.status(503).json({
       status: "error",
       message: "Servicio temporalmente no disponible."

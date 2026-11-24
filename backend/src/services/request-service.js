@@ -12,6 +12,15 @@ import {
 
 const MAX_LIST_LIMIT = 100;
 const DEFAULT_LIST_LIMIT = 50;
+const SAFE_CLIENT_ERROR_CODES = new Set([
+  "INVALID_UID", "INVALID_LIMIT", "INVALID_REQUEST_ID", "FORBIDDEN",
+  "CATEGORY_NOT_FOUND", "PROVIDER_NOT_FOUND", "PROVIDER_NOT_ELIGIBLE",
+  "PROVIDER_SCHEDULE_CONFLICT", "PROVIDER_LINK_CHANGED", "CATEGORY_CHANGED",
+  "INVALID_REQUEST_TRANSITION", "REQUEST_NOT_FOUND", "REQUEST_NOT_COMPLETED",
+  "RATING_ALREADY_EXISTS", "INVALID_RATING", "INVALID_RATING_COMMENT",
+  "PROTECTED_RATING_FIELDS", "IDEMPOTENCY_CONFLICT", "INVALID_IDEMPOTENCY_KEY",
+  "CATEGORY_INVALID", "IDEMPOTENCY_INVALID",
+]);
 
 const TRANSITIONS = Object.freeze({
   accept: { role: "Proveedor", from: ["Pendiente"], to: "Aceptada", timestamp: "acceptedAt" },
@@ -38,7 +47,20 @@ function requireUid(uid) {
 }
 
 function safeFirestoreError(error) {
-  if (Number.isInteger(error?.statusCode)) return error;
+  if (
+    Number.isInteger(error?.statusCode)
+    && error.statusCode >= 400
+    && error.statusCode < 500
+    && SAFE_CLIENT_ERROR_CODES.has(error.code)
+  ) return error;
+  if (error?.code === "CATEGORY_INVALID" || error?.code === "IDEMPOTENCY_INVALID") {
+    return serviceError(
+      error.code === "CATEGORY_INVALID" ? "La categoría indicada no es válida." : "La clave de idempotencia no es válida.",
+      400,
+      error.code,
+    );
+  }
+  if (Number.isInteger(error?.statusCode) && error.statusCode >= 500) return error;
   console.error("Firestore request operation failed:", error?.code || "unknown");
   return serviceError(
     "No se pudo completar la operación de solicitudes.",

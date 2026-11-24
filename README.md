@@ -383,8 +383,8 @@ HogarFix/
 │   ├── data.js                Datos de demostración (categorías, proveedores, reseñas…)
 │   └── schema.json            Esquema de los formularios y entidades
 ├── js/
-│   ├── config.js              URL del backend (vacía = modo demostración)
-│   ├── firebase-config.js     Firebase web SDK (Authentication y Firestore)
+│   ├── config.js              URL de la API backend
+│   ├── firebase-config.js     Firebase web SDK (Authentication)
 │   ├── prueba-firebase.js     Script de la página de prueba de Firebase
 │   ├── main.js                Navegación, accesibilidad y sesión
 │   ├── utils.js               Formato de precios y fechas, estados de carga y error
@@ -419,13 +419,16 @@ HogarFix/
 │   │   └── services/          perfiles, solicitudes, calificaciones, notificaciones, soporte e ingresos
 │   └── test/
 │       ├── app.test.js, error-handling.test.js           Aplicación y manejo de errores
+│       ├── catalog-service.test.js                       Catálogo backend
 │       ├── auth-middleware.test.js, profile-routes.test.js  Autenticación, roles y perfiles
 │       ├── request-routes.test.js, request-service.test.js, request-validation.test.js  Solicitudes
 │       ├── calificaciones-soporte.test.js                Calificaciones, notificaciones y soporte
 │       ├── earnings-routes.test.js                       Ingresos del proveedor
 │       └── integration/                                  Pruebas con Firebase Emulator
-├── firebase.json              Configuración de Firebase Emulator
+├── firebase.json              Reglas, índices y configuración de Emulator
+├── firestore.indexes.json     Índices compuestos de solicitudes
 ├── firestore.rules            Reglas de seguridad de Firestore
+├── render.yaml                Blueprint de despliegue del backend
 ├── .env.example               Variables de entorno de ejemplo
 └── .prettierrc.json           Formato común del código
 ```
@@ -534,14 +537,13 @@ Para usar las rutas de perfiles, configura `PROFILE_API_BASE_URL` en `js/config.
 export const PROFILE_API_BASE_URL = "http://localhost:3000/api"; // o la URL publicada
 ```
 
-Mantén `REQUESTS_API_BASE_URL` vacía mientras no exista un catálogo real de categorías y proveedores. Al activarla, la API de solicitudes funciona, pero el formulario se bloquea hasta contar con IDs de catálogo reales; no envía IDs de demostración.
-Configura `backend/.env` a partir de `backend/.env.example`, incluidas `FIREBASE_PROJECT_ID` y `CORS_ORIGINS`. Firebase Admin requiere Application Default Credentials. Las reglas de Firestore desplegadas no se modifican; el backend valida sus propias escrituras porque Admin SDK omite dichas reglas.
+`js/config.js` conecta perfiles y solicitudes a la API Node configurada. Para desarrollo local, reemplaza ambas URLs por `http://localhost:3000/api`. Configura `backend/.env` a partir de `backend/.env.example`, incluidas `FIREBASE_PROJECT_ID` y `CORS_ORIGINS`. Firebase Admin requiere Application Default Credentials. Las reglas e índices están declarados en `firebase.json`; el backend valida sus propias escrituras porque Admin SDK omite las reglas.
 
 Los perfiles se guardan en `users/{uid}` (datos personales) y `providerProfiles/{uid}` (datos profesionales y estados controlados por servidor). Los usuarios no pueden cambiar correo, rol, UID, validación automática ni aprobación desde las rutas de perfil. Una edición profesional reinicia la aprobación a `pending`; el perfil completo puede superar la validación automática, pero solo una cuenta con claim administrativo puede aprobarlo. Foto y certificados quedan pendientes de configurar Firebase Storage.
 
 ### Modo demostración
 
-Mientras `PROFILE_API_BASE_URL` esté vacía, las pantallas de perfil muestran un error de configuración y no guardan cambios localmente. Mientras `REQUESTS_API_BASE_URL` esté vacía, las solicitudes mantienen su modo de demostración con `localStorage`; categorías y proveedores siguen usando datos de demostración. Las cuentas y la sesión se gestionan con Firebase Authentication. La persistencia local de solicitudes y mensajes no ofrece sincronización ni controles de acceso de servidor.
+Para probar en modo demostración, deja ambas URLs vacías; solicitudes, categorías y proveedores usan datos locales. Con la API configurada, el flujo real requiere categorías sembradas y asociaciones Firestore de proveedores aprobados. Las cuentas y la sesión se gestionan con Firebase Authentication.
 En modo demostración, el formulario conserva la selección del método de pago y muestra su estado informativo, pero no procesa cobros. El servicio real de solicitudes no transmite campos de pago.
 
 ## 🌍 9. Despliegue
@@ -562,8 +564,14 @@ El sitio queda en `https://tecnologias-2026-2.github.io/HogarFix/`.
 - No se piden ni guardan datos de tarjetas. Los métodos y estados de pago son exclusivamente informativos en el modo demostración.
 - La configuración web de Firebase (`apiKey`, `projectId`…) es pública por diseño, pero el acceso a los datos debe protegerse con **reglas de seguridad de Firestore** por usuario y rol.
 - Firebase Admin usa Application Default Credentials y `FIREBASE_PROJECT_ID`; configura ADC en el entorno de ejecución. Las credenciales privadas deben permanecer fuera del repositorio y no subirse a GitHub.
-- El control de acceso de las pantallas mejora la navegación, pero la autorización de los datos debe imponerse en el backend. La aprobación de proveedores requiere el claim administrativo; las reglas de Firestore no forman parte de esta integración.
+- El control de acceso de las pantallas mejora la navegación, pero la autorización de los datos debe imponerse en el backend. La aprobación de proveedores requiere el claim administrativo; las reglas niegan operaciones directas del cliente y se publican junto con los índices mediante Firebase CLI.
 - Lista de revisión antes de cada entrega: sin archivos `.env` ni credenciales de cuentas de servicio. Como GitHub Pages publica la raíz del repositorio, la página de prueba `prueba.html` (con `js/prueba-firebase.js`) también queda publicada; no contiene credenciales privadas.
+
+### Backend en Render y datos iniciales
+
+[`render.yaml`](render.yaml) define el servicio Node en la rama `Dev`, con raíz `backend/` y chequeo `/api/health`. En Render, crea el Blueprint y carga `firebase-service-account.json` como Secret File. Confirma la URL asignada y ajusta `js/config.js` si Render agrega un sufijo al subdominio.
+
+Desde `backend/`, ejecuta `npm run deploy:firestore` con Firebase CLI autenticado para publicar reglas e índices. Ejecuta `npm run seed:catalog` para sembrar categorías; para asociar proveedores, configura UIDs reales y perfiles ya aprobados. `npm run admin:grant` asigna el claim inicial solo tras confirmar el UID autorizado. Estos pasos requieren credenciales Firebase y no se ejecutan automáticamente al desplegar.
 
 ## 📌 11. Estado del proyecto
 
@@ -597,5 +605,5 @@ Los números 01-28 reflejan el plan de trabajo anterior; las filas identificadas
 | 22 | Modelo de datos | ✅ Sección 6 de este README |
 | 23-24 | Firebase Admin y operaciones en Firestore | ✅ Configuración centralizada y servicios del backend |
 | 25 | Calificaciones de proveedores | ✅ 1 a 5 estrellas, una por servicio y promedio por proveedor |
-| 26 | Notificaciones y soporte | ✅ Notificaciones por cambio de estado, recordatorios, FAQs y mensajes de soporte (API; sin pantalla propia) |
+| 26 | Notificaciones y soporte | ✅ API y pantallas de notificaciones y soporte; los recordatorios esperan un worker externo |
 | 27 | Pruebas e integración | 🟡 En curso: pruebas automatizadas del backend en verde; falta la evidencia con Postman/Thunder Client |

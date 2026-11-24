@@ -426,3 +426,37 @@ test("support and notification endpoints are authenticated and use the verified 
     assert.equal((await request(baseUrl, "/api/support/faqs", "invalid")).status, 401);
   });
 });
+
+test("publica los errores de dominio con su estado 4xx y código", async () => {
+  const conflict = Object.assign(new Error("El horario ya no está disponible."), {
+    statusCode: 409,
+    code: "PROVIDER_SCHEDULE_CONFLICT",
+  });
+  const { app } = createTestApp({ requestServiceOverrides: { async createRequest() { throw conflict; } } });
+  await withServer(app, async (baseUrl) => {
+    const response = await request(baseUrl, "/api/solicitudes", "client-token", {
+      method: "POST",
+      headers: { "Idempotency-Key": "request-key-000001" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(response.status, 409);
+    assert.equal((await response.json()).code, "PROVIDER_SCHEDULE_CONFLICT");
+  });
+});
+
+test("conserva 503 para errores de Firebase en vez de convertirlos a 500", async () => {
+  const unavailable = Object.assign(new Error("Firestore unavailable"), {
+    statusCode: 503,
+    code: "FIRESTORE_UNAVAILABLE",
+  });
+  const { app } = createTestApp({ requestServiceOverrides: { async createRequest() { throw unavailable; } } });
+  await withServer(app, async (baseUrl) => {
+    const response = await request(baseUrl, "/api/solicitudes", "client-token", {
+      method: "POST",
+      headers: { "Idempotency-Key": "request-key-000001" },
+      body: JSON.stringify({}),
+    });
+    assert.equal(response.status, 503);
+    assert.match((await response.json()).message, /temporalmente no disponible/i);
+  });
+});

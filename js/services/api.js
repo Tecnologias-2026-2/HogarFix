@@ -153,15 +153,6 @@ function unwrapRequests(response) {
   return response.requests.map(normalizeRequest);
 }
 
-function unavailableCatalog() {
-  return Promise.reject(
-    new ApiError(
-      "El backend de solicitudes todavía no ofrece un catálogo real de categorías y proveedores.",
-      503,
-    ),
-  );
-}
-
 /* ---------- Modo demostración ---------- */
 
 function demo(result) {
@@ -243,13 +234,24 @@ function paymentStatusFor(metodo) {
 
 // GET /categorias
 export function getCategorias() {
-  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
+  if (USE_REQUESTS_BACKEND) {
+    return requestsHttp("/categorias").then((response) => {
+      if (!Array.isArray(response?.categories)) throw new ApiError("El servidor devolvió categorías con formato inválido.");
+      return response.categories;
+    });
+  }
   return demo(demoData.categorias);
 }
 
 // GET /proveedores?categoria=&disponible=
 export function getProveedores({ categoria, disponible } = {}) {
-  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
+  if (USE_REQUESTS_BACKEND) {
+    const query = categoria ? `?categoria=${encodeURIComponent(categoria)}` : "";
+    return requestsHttp(`/proveedores${query}`).then((response) => {
+      if (!Array.isArray(response?.providers)) throw new ApiError("El servidor devolvió proveedores con formato inválido.");
+      return disponible ? response.providers.filter((provider) => provider.available) : response.providers;
+    });
+  }
   return demo(() =>
     allProviders().filter(
       (item) =>
@@ -260,7 +262,14 @@ export function getProveedores({ categoria, disponible } = {}) {
 
 // GET /proveedores/:id
 export function getProveedor(id) {
-  if (USE_REQUESTS_BACKEND) return unavailableCatalog();
+  if (USE_REQUESTS_BACKEND) {
+    return requestsHttp(`/proveedores/${encodeURIComponent(id)}`).then((response) => {
+      if (!response?.provider || typeof response.provider.providerCatalogId !== "string") {
+        throw new ApiError("El servidor devolvió un profesional con formato inválido.");
+      }
+      return response.provider;
+    });
+  }
   return demo(() => {
     const proveedor = allProviders().find((item) => item.id === id);
     if (!proveedor) throw new ApiError("No encontramos a este profesional.", 404);
@@ -319,6 +328,32 @@ export async function getCalificacionesProveedor(uid) {
     throw new ApiError("El servidor devolvió las calificaciones con formato inválido.");
   }
   return response.summary;
+}
+
+export function getNotificaciones() {
+  return requestsHttp("/notifications").then((response) => {
+    if (!Array.isArray(response?.notifications)) throw new ApiError("El servidor devolvió notificaciones con formato inválido.");
+    return response.notifications;
+  });
+}
+
+export function marcarNotificacionLeida(id) {
+  return requestsHttp(`/notifications/${encodeURIComponent(id)}/read`, { method: "PATCH" })
+    .then((response) => response?.notification);
+}
+
+export function getPreguntasFrecuentes() {
+  return requestsHttp("/support/faqs").then((response) => {
+    if (!Array.isArray(response?.faqs)) throw new ApiError("El servidor devolvió preguntas frecuentes con formato inválido.");
+    return response.faqs;
+  });
+}
+
+export function enviarMensajeSoporte({ subject, message }) {
+  return requestsHttp("/support/messages", {
+    method: "POST",
+    body: JSON.stringify({ subject, message }),
+  }).then((response) => response?.message);
 }
 
 // POST /solicitudes
@@ -413,6 +448,25 @@ export function confirmarSolicitud(id) {
       return solicitud;
     }),
   );
+}
+
+export function cancelarSolicitud(id) {
+  if (USE_REQUESTS_BACKEND) {
+    return requestsHttp(`/solicitudes/${encodeURIComponent(id)}/cancelar`, { method: "PATCH" })
+      .then(unwrapRequest);
+  }
+  return requireAuthState().then(({ user, profile }) => demo(() => {
+    if (profile.role !== "Cliente") throw new ApiError("Solo el cliente puede cancelar la solicitud.", 403);
+    const items = readRequests();
+    const request = items.find((item) => item.id === id && item.ownerEmail === user.email);
+    if (!request) throw new ApiError("No encontramos esa solicitud.", 404);
+    if (!["Pendiente", "Aceptada"].includes(request.status)) throw new ApiError("La solicitud ya no se puede cancelar.", 409);
+    request.status = "Cancelada";
+    request.updatedAt = new Date().toISOString();
+    request.cancelledAt = request.updatedAt;
+    writeRequests(items);
+    return request;
+  }));
 }
 
 // Los métodos de pago son opciones informativas del modo demostración; no hay endpoint de pagos.

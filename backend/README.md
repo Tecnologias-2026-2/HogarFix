@@ -57,6 +57,10 @@ Todas las rutas utilizan el prefijo `/api`.
 | Método | Endpoint | Acceso | Descripción |
 |---|---|---|---|
 | GET | `/api/health` | Público | Comprueba el estado del servidor |
+| POST | `/api/auth/profile` | ID token Firebase | Crea el perfil inicial del usuario autenticado |
+| GET | `/api/categorias` | Público | Consulta categorías activas |
+| GET | `/api/proveedores?categoria=:id` | Público | Consulta proveedores elegibles del catálogo |
+| GET | `/api/proveedores/:id` | Público | Consulta el perfil público de un proveedor |
 | GET | `/api/client/me` | Cliente autenticado | Consulta la identidad del cliente |
 | GET | `/api/provider/me` | Proveedor autenticado | Consulta la identidad del proveedor |
 | GET | `/api/profile/me` | Usuario autenticado | Consulta el perfil propio |
@@ -100,14 +104,14 @@ Todas las rutas utilizan el prefijo `/api`.
 - Las respuestas exitosas utilizan `status: "ok"`.
 
 
-Las rutas privadas requieren `Authorization: Bearer <Firebase ID token>`. El middleware verifica firma, vencimiento y revocación mediante Firebase Admin y obtiene el rol desde `users/{uid}` en Firestore; nunca confía en un rol enviado por el cliente.
+Las rutas privadas requieren `Authorization: Bearer <Firebase ID token>`. El middleware verifica firma, vencimiento y revocación mediante Firebase Admin y obtiene el rol desde `users/{uid}` en Firestore; nunca confía en un rol enviado por el cliente. El perfil inicial se crea con `POST /api/auth/profile` tras verificar el ID token.
 
 - `GET /api/client/me`: requiere el rol `Cliente`.
 - `GET /api/provider/me`: requiere el rol `Proveedor`.
 - `GET/PATCH /api/profile/me`: consulta y actualiza datos personales propios.
 - `GET/PATCH /api/provider/profile/me`: consulta y actualiza el perfil profesional propio; conserva la aprobación bajo control administrativo.
 - `GET /api/provider/eligibility`: informa si el proveedor puede ofrecer servicios.
-- `PATCH /api/admin/providers/:uid/approval`: requiere el custom claim `admin: true` del token Firebase y solo permite decidir sobre perfiles completos con validación automática aprobada. No existe una ruta para otorgar este claim.
+- `PATCH /api/admin/providers/:uid/approval`: requiere el custom claim `admin: true` del token Firebase y solo permite decidir sobre perfiles completos con validación automática aprobada. Un administrador autorizado puede asignar el primer claim con `npm run admin:grant`, confirmando explícitamente el UID.
 - `POST /api/solicitudes`: requiere el rol `Cliente` y `Idempotency-Key`; el UID del cliente procede del token verificado.
 - `GET /api/solicitudes` y `GET /api/solicitudes/:id`: consulta las solicitudes del cliente autenticado y su detalle propio.
 - `PATCH /api/solicitudes/:id/confirmar` y `/cancelar`: confirma solicitudes aceptadas o cancela solicitudes pendientes/aceptadas.
@@ -118,13 +122,13 @@ Las rutas privadas requieren `Authorization: Bearer <Firebase ID token>`. El mid
 
 Las rutas de identidad devuelven únicamente la identidad asociada al token verificado. Las rutas de perfil devuelven solo los datos del usuario autenticado. Un token ausente/inválido responde 401; un rol o perfil no autorizado responde 403; un fallo de Firebase responde 503.
 
-Las rutas de solicitudes pasan al servicio únicamente `request.auth.uid` y `request.auth.role`; no toman identidad ni rol del body, query o ruta. El servicio verifica la propiedad/asignación y responde 404 para solicitudes ajenas. La creación usa `providerCatalog/{catalogId}` y `categories/{categoryId}` administrados en Firestore; no hay asociaciones ni categorías sembradas por estas rutas.
+Las rutas de solicitudes pasan al servicio únicamente `request.auth.uid` y `request.auth.role`; no toman identidad ni rol del body, query o ruta. El servicio verifica la propiedad/asignación y responde 404 para solicitudes ajenas. La creación usa `providerCatalog/{catalogId}` y `categories/{categoryId}` administrados en Firestore. `npm run seed:catalog` crea categorías faltantes; las asociaciones requieren UIDs reales de proveedores aprobados.
 
 La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la transacción Firestore. Firebase Authentication y Firestore no comparten una transacción atómica; una cuenta podría deshabilitarse entre esa comprobación y el commit. La aceptación vuelve a comprobar elegibilidad antes de la transacción y vuelve a validar el perfil dentro de ella, pero no elimina esa ventana para el estado de Authentication. Al aceptar, el servicio rechaza la solicitud si el proveedor ya tiene otro servicio asignado en ese horario (`PROVIDER_SCHEDULE_CONFLICT`).
 
 ## Pruebas automatizadas
 
-Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 9 archivos de pruebas automatizadas `test/*.test.js`: aplicación, manejo de errores, autenticación, perfiles, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
+Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 10 archivos de pruebas automatizadas `test/*.test.js`: aplicación, manejo de errores, autenticación, perfiles, catálogo, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
 
@@ -149,7 +153,7 @@ Antes de probar, `scripts/run-emulator-tests.js` exige que el proyecto informado
 
 Las pruebas de integración de solicitudes usan `@google-cloud/firestore` conectado explícitamente al host local validado, con proyecto `demo-hogarfix`; no usan un doble de Firestore. El transporte recibe un proveedor de autenticación vacío, porque el emulador local no requiere credenciales; esto evita que el cliente busque ADC y no sustituye operaciones de Firestore. El servicio real de perfiles consulta los documentos del emulador al comprobar la elegibilidad. Se sustituye únicamente `auth.getUser`, porque Authentication Emulator no forma parte de esta etapa; esa sustitución controla el estado externo de la cuenta y no simula datos ni operaciones de Firestore. Los fixtures registran la limpieza con `testContext.after()`, que invoca `cleanup()` al terminar cada prueba. Los documentos creados directamente por el fixture usan `create()` y solo se registran para limpieza tras crearse; para la categoría, el fixture prueba los IDs admitidos y crea una categoría únicamente si encuentra un documento inexistente, sin sobrescribir ni borrar categorías preexistentes. Si todos los IDs admitidos ya existen, la preparación falla de forma segura. La limpieza elimina las referencias creadas por el fixture y las subcolecciones de sus solicitudes. El emulador también se cierra al terminar y no se exportan datos.
 
-Esta ejecución no prueba Firebase Authentication Emulator ni Firestore Rules. Como `firebase.json` no carga un archivo de reglas en esta etapa, Firestore Emulator permite lecturas y escrituras abiertas; su host está limitado a loopback y el proyecto es de demostración. Las pruebas de transacciones y concurrencia verifican el comportamiento observado en el emulador, no garantizan la semántica o el rendimiento de producción. No se ejecutan despliegues ni se contacta Firebase real.
+Esta ejecución no prueba Firebase Authentication Emulator. `firebase.json` carga `firestore.rules` en el emulador y limita la lectura/escritura directa del cliente; las pruebas de reglas requieren un cliente Firebase no administrativo y no se cubren en esta suite. Las pruebas de transacciones y concurrencia verifican el comportamiento observado en el emulador, no garantizan la semántica o el rendimiento de producción. No se ejecutan despliegues ni se contacta Firebase real.
 
 Para comprobar solo las condiciones del guard, sin conectarse ni escribir datos:
 
@@ -159,10 +163,16 @@ $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
 node scripts/run-emulator-tests.js --check
 ```
 
-El emulador se configura sin cargar `firestore.rules`; esta etapa no valida reglas ni solicitudes. No copies credenciales de producción al entorno local.
+El emulador carga las reglas declaradas en el `firebase.json` de la raíz. No copies credenciales de producción al entorno local.
 
 Antes de usar el panel administrativo, un administrador confiable debe asignar `admin: true` mediante un flujo seguro de Firebase Admin fuera de este backend.
 
-El backend escribe con Firebase Admin SDK y por ello omite las reglas de Firestore. Las rutas aplican allowlists de campos y usan el UID del token; las reglas desplegadas siguen siendo necesarias para las escrituras directas desde el frontend.
+El backend escribe con Firebase Admin SDK y por ello omite las reglas de Firestore. Las rutas aplican allowlists de campos y usan el UID del token; las reglas bloquean el acceso directo desde el frontend. Despliega reglas e índices desde la raíz con `npm run deploy:firestore` en un entorno con Firebase CLI autorizado.
+
+## Render y datos iniciales
+
+La raíz contiene `render.yaml` para crear el servicio Node desde esta carpeta. En Render, carga el Secret File `firebase-service-account.json`; el servicio utiliza `/etc/secrets/firebase-service-account.json` mediante `GOOGLE_APPLICATION_CREDENTIALS`. Confirma el subdominio que Render asigne y actualiza `js/config.js` si difiere del valor configurado.
+
+Para inicializar el catálogo ejecuta `npm run seed:catalog` después de definir y confirmar `FIREBASE_PROJECT_ID`. Para asociar proveedores configura `PROVIDER_CATALOG_JSON` con IDs reales; el script verifica cuenta activa y perfil aprobado y no inventa usuarios ni los aprueba.
 
 El frontend actual y su despliegue en GitHub Pages permanecen en la raíz del repositorio. Esta carpeta no forma parte del artefacto publicado por Pages.

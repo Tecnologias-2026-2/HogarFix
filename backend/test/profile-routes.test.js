@@ -8,6 +8,7 @@ const identities = {
   "client-token": { uid: "client-uid", email: "client@example.test" },
   "provider-token": { uid: "provider-uid", email: "provider@example.test" },
   "admin-token": { uid: "admin-uid", email: "admin@example.test", admin: true },
+  "new-client-token": { uid: "new-client-uid", email: "new-client@example.test" },
 };
 
 const userProfiles = {
@@ -72,6 +73,7 @@ class MemoryFirestore {
     const transaction = {
       get: (reference) => reference.get(),
       set: (reference, data, options = {}) => writes.push({ reference, data, merge: options.merge }),
+      create: (reference, data) => writes.push({ reference, data, merge: false }),
     };
     const result = await operation(transaction);
     writes.forEach(({ reference, data, merge }) => {
@@ -170,6 +172,27 @@ test("personal profile is scoped to the token UID and rejects protected fields",
     assert.equal((await update.json()).profile.firstName, "Ana María");
     assert.equal(db.read("users", "provider-uid").firstName, "Carmen");
     assert.equal(db.read("users", "client-uid").role, "Cliente");
+  });
+});
+
+test("initial user profile is created by the backend from verified token identity", async () => {
+  const { app, db } = createTestApp();
+  await withServer(app, async (baseUrl) => {
+    const response = await request(baseUrl, "/api/auth/profile", "new-client-token", {
+      method: "POST",
+      body: JSON.stringify({ firstName: "Laura", lastName: "Pérez", role: "Cliente", uid: "forged", email: "forged@example.test" }),
+    });
+    assert.equal(response.status, 201);
+    const profile = db.read("users", "new-client-uid");
+    assert.equal(profile.email, "new-client@example.test");
+    assert.equal(profile.role, "Cliente");
+    assert.equal("uid" in profile, false);
+
+    const invalid = await request(baseUrl, "/api/auth/profile", "missing-token", {
+      method: "POST",
+      body: JSON.stringify({ firstName: "Laura", lastName: "Pérez", role: "Cliente" }),
+    });
+    assert.equal(invalid.status, 401);
   });
 });
 

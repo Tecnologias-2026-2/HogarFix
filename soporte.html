@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Soporte | HogarFix</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/main.js" type="module"></script>
+  </head>
+  <body class="search-page">
+    <main class="container" style="padding-block: 3rem">
+      <a class="button button-small" href="index.html">Volver a HogarFix</a>
+      <h1>Centro de soporte</h1>
+      <section aria-labelledby="support-faq-title">
+        <h2 id="support-faq-title">Preguntas frecuentes</h2>
+        <div id="support-faq-list" class="flow-panel" aria-live="polite"></div>
+      </section>
+      <section aria-labelledby="support-form-title">
+        <h2 id="support-form-title">Escríbenos</h2>
+        <form id="support-form" class="flow-panel">
+          <label>Asunto<input name="subject" minlength="3" maxlength="120" required /></label>
+          <label>Mensaje<textarea name="message" minlength="10" maxlength="3000" rows="5" required></textarea></label>
+          <button class="button" type="submit">Enviar mensaje</button>
+          <p id="support-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      <a href="notificaciones.html">Ver notificaciones</a>
+    </main>
+  </body>
+</html>

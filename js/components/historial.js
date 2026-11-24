@@ -1,6 +1,7 @@
 // ISSUE 14. Historial de servicios del cliente (solicitudes.html) y resumen del panel (app.html).
 import {
   calificarSolicitud,
+  cancelarSolicitud,
   getCalificacionSolicitud,
   getSolicitudes,
   USE_REQUESTS_BACKEND,
@@ -28,12 +29,16 @@ function requestCard(item) {
   const ratingAction = USE_REQUESTS_BACKEND && item.status === "Completada"
     ? `<button class="button button-small" type="button" data-rating-open="${escapeHTML(item.id)}">Calificar servicio</button><div class="rating-form-slot" data-rating-slot="${escapeHTML(item.id)}"></div>`
     : "";
+  const cancelAction = ["Pendiente", "Aceptada"].includes(item.status)
+    ? `<button class="button button-small danger-button" type="button" data-cancel-request="${escapeHTML(item.id)}">Cancelar solicitud</button>`
+    : "";
   const actions = [
     item.status === "Aceptada"
       ? `<a class="button button-small" href="reserva.html?id=${encodeURIComponent(item.id)}">Confirmar servicio</a>`
       : `<a href="reserva.html?id=${encodeURIComponent(item.id)}">Ver resumen</a>`,
     `<a href="chat.html?persona=${encodeURIComponent(item.provider)}">▢ Chat</a>`,
     ratingAction,
+    cancelAction,
   ].join("");
   return `
     <article class="client-request-card">
@@ -92,6 +97,22 @@ if (list) {
   };
 
   list.addEventListener("click", async (event) => {
+    const cancelButton = event.target.closest("[data-cancel-request]");
+    if (cancelButton) {
+      if (!window.confirm("¿Quieres cancelar esta solicitud?")) return;
+      cancelButton.disabled = true;
+      try {
+        await cancelarSolicitud(cancelButton.dataset.cancelRequest);
+        await load();
+      } catch (error) {
+        cancelButton.disabled = false;
+        const feedback = document.createElement("p");
+        feedback.className = "form-feedback is-error";
+        feedback.textContent = error.message;
+        cancelButton.after(feedback);
+      }
+      return;
+    }
     const button = event.target.closest("[data-rating-open]");
     if (!button) return;
     const requestId = button.dataset.ratingOpen;

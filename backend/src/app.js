@@ -5,6 +5,9 @@ import { createAdminRouter } from "./routes/admin.js";
 import { createProfileRouter } from "./routes/profile.js";
 import { createRequestsRouter } from "./routes/requests.js";
 import { createSupportRouter } from "./routes/support.js";
+import { createCatalogRouter } from "./routes/catalog.js";
+import { createAuthProfileRouter } from "./routes/auth-profile.js";
+import { createCatalogService } from "./services/catalog-service.js";
 import { createProfileService } from "./services/profile-service.js";
 import { createRequestService } from "./services/request-service.js";
 import { createSupportService } from "./services/support-service.js";
@@ -30,7 +33,7 @@ function getAllowedOrigins() {
 
 export function createApp(
   authDependencies = {},
-  { profileService, requestService, supportService, earningsService } = {}
+  { profileService, requestService, supportService, catalogService, earningsService } = {},
 ) {
   const app = express();
   const allowedOrigins = getAllowedOrigins();
@@ -58,9 +61,11 @@ export function createApp(
 
   app.use("/api", createAccessRouter(authDependencies));
   const profiles = profileService || createProfileService();
+  app.use("/api", createAuthProfileRouter(authDependencies, profiles));
   app.use("/api", createProfileRouter(authDependencies, profiles));
   app.use("/api", createAdminRouter(authDependencies, profiles));
   const requests = requestService || createRequestService({ profileService: profiles });
+  app.use("/api", createCatalogRouter(catalogService || createCatalogService({ profileService: profiles, requestService: requests })));
   app.use("/api", createRequestsRouter(authDependencies, requests));
   const earnings = earningsService || createEarningsService();
   app.use("/api", createEarningsRouter(authDependencies, earnings));

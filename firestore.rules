@@ -1,23 +1,10 @@
 ﻿rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow create: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role in ['Cliente', 'Proveedor'];
-
-      allow read: if request.auth != null
-        && request.auth.uid == userId;
-
-      // El usuario puede actualizar sus datos personales,
-      // pero no cambiar su correo o rol desde el cliente.
-      allow update: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.role == resource.data.role;
-
-      allow delete: if false;
+    // Las cuentas y perfiles se administran a través del backend autenticado.
+    // Firebase Admin omite estas reglas; ningún cliente web escribe colecciones.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
