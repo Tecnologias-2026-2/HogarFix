@@ -1,14 +1,14 @@
 # Backend de HogarFix
 
-Backend independiente del frontend, desarrollado con Node.js y Express.
+Backend independiente del frontend, desarrollado con Node.js (22 o superior) y Express 5. Está publicado en Render en **https://hogarfix-zbrm.onrender.com** y es la única parte del sistema que accede a Firestore.
 
 ## Estructura y responsabilidades
 
 - `src/config/`: inicialización diferida de Firebase Admin mediante Application Default Credentials.
-- `src/routes/`: rutas de identidad, perfiles, aprobación administrativa y solicitudes; `GET /api/health` está montada directamente en `src/app.js`.
+- `src/routes/`: registro del perfil (`auth-profile`), identidad (`access`), perfiles, catálogo público (`catalog`), aprobación administrativa, solicitudes y calificaciones, ingresos (`earnings`), notificaciones y soporte (`support`); `GET /api/health` está montada directamente en `src/app.js`.
 - `src/controllers/`: adaptación entre las rutas HTTP y los servicios.
-- `src/services/`: validación y persistencia de perfiles y solicitudes, y elegibilidad profesional.
-- `src/middlewares/`: verificación de Firebase ID tokens, rol de perfil y claim administrativo.
+- `src/services/`: validación y persistencia de perfiles, catálogo, solicitudes, calificaciones, notificaciones, soporte e ingresos, y elegibilidad profesional.
+- `src/middlewares/`: verificación de Firebase ID tokens, rol de perfil y claim administrativo (`auth.js`), validación de entrada (`validate.js`) y formato común de errores (`error-handler.js`).
 
 ## Credenciales
 
@@ -16,7 +16,9 @@ El puerto se configura mediante la variable de entorno `PORT` (predeterminado: `
 
 Nunca copies una clave de servicio al repositorio ni la incluyas en una imagen o artefacto. Usa una identidad administrada/ADC en producción y guarda cualquier secreto de desarrollo fuera de Git.
 
-Configura `CORS_ORIGINS` como una lista separada por comas con los orígenes permitidos para el frontend. La plantilla incluye Live Server y el origen de GitHub Pages.
+En Render, la clave se carga como Secret File `firebase-admin.json` y `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/firebase-admin.json` (ver *Render y datos iniciales*).
+
+Configura `CORS_ORIGINS` como una lista separada por comas con los orígenes permitidos para el frontend. La plantilla incluye Live Server y el origen de GitHub Pages; en Render está configurado `https://tecnologias-2026-2.github.io`. Si la variable no existe, `src/app.js` usa esos mismos tres orígenes por defecto.
 
 ## Instalación y ejecución
 
@@ -100,7 +102,7 @@ Todas las rutas utilizan el prefijo `/api`.
 - Los identificadores dinámicos se representan con parámetros como `:id` y `:uid`.
 - Las rutas privadas requieren un token Firebase en la cabecera `Authorization`.
 - Las respuestas se entregan en formato JSON.
-- Los errores utilizan códigos HTTP apropiados y una respuesta con `status: "error"` y `message`.
+- Los errores utilizan códigos HTTP apropiados y una respuesta con `status: "error"`, `code` (por ejemplo `PROVIDER_SCHEDULE_CONFLICT` o `PROFILE_ALREADY_EXISTS`) y `message`. Los errores no previstos responden 500 sin `code` ni detalles internos; los fallos de Firebase responden 503.
 - Las respuestas exitosas utilizan `status: "ok"`.
 
 
@@ -128,7 +130,7 @@ La elegibilidad consulta el perfil/estado de Firebase Authentication fuera de la
 
 ## Pruebas automatizadas
 
-Desde esta carpeta, ejecuta `npm test` para correr explícitamente los 10 archivos de pruebas automatizadas `test/*.test.js`: aplicación, manejo de errores, autenticación, perfiles, catálogo, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
+Desde esta carpeta, ejecuta `npm test` (en PowerShell con scripts bloqueados, `npm.cmd test`) para correr explícitamente los 10 archivos de pruebas automatizadas `test/*.test.js` (90 pruebas): aplicación, manejo de errores, autenticación, perfiles, catálogo, rutas y servicio de solicitudes, validación, calificaciones y soporte, e ingresos del proveedor. La lista explícita mantiene separadas las pruebas de integración que están dentro de `test/integration/`.
 
 Las pruebas HTTP de solicitudes levantan Express localmente y usan verificadores de token, perfiles y servicios simulados. Las pruebas del servicio de solicitudes usan un doble `MemoryFirestore` y un servicio de elegibilidad simulado; las de validación ejercitan funciones sin Firebase. Estos dobles permiten probar el mapeo de rutas, las reglas de negocio y las respuestas previstas, pero no demuestran atomicidad, concurrencia, reintentos ni comportamiento de índices de Firebase real.
 
